@@ -4,999 +4,910 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LexVis — 법률 열람 & 판례 해석 보조</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0e0f14;
-    --surface: #161820;
-    --surface2: #1e2028;
-    --border: #2a2d3a;
-    --border-bright: #3a3f52;
-    --text: #dde2f0;
-    --text-muted: #7b82a0;
-    --text-dim: #4a5070;
-    --accent: #c8a96e;
-    --accent-dim: rgba(200,169,110,0.15);
-    --accent-glow: rgba(200,169,110,0.08);
-    --blue: #5b8dee;
-    --blue-dim: rgba(91,141,238,0.15);
-    --red: #e05c5c;
-    --green: #5cc878;
-    --purple: #a07de0;
-    --font-serif: 'Noto Serif KR', serif;
-    --font-sans: 'Noto Sans KR', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-    --radius: 6px;
-    --shadow: 0 4px 24px rgba(0,0,0,0.4);
-  }
-  .light-mode {
-    --bg: #f4f2ed;
-    --surface: #faf9f6;
-    --surface2: #ede9e0;
-    --border: #d8d0c0;
-    --border-bright: #b8a890;
-    --text: #1a1810;
-    --text-muted: #6b6050;
-    --text-dim: #a09080;
-    --accent: #8b6914;
-    --accent-dim: rgba(139,105,20,0.1);
-    --accent-glow: rgba(139,105,20,0.05);
-    --blue: #2355c4;
-    --blue-dim: rgba(35,85,196,0.12);
-    --shadow: 0 4px 24px rgba(0,0,0,0.12);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:var(--font-sans); font-size:14px; line-height:1.6; transition: background 0.3s, color 0.3s; }
-
-  /* ── 페이지 전환 ── */
-  .page { display:none; }
-  .page.active { display:block; }
-
-  /* ══════════════════════════════════
-     HOME PAGE
-  ══════════════════════════════════ */
-  #home { min-height:100vh; }
-
-  .home-nav {
-    position:fixed; top:0; left:0; right:0; z-index:100;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 48px; height:60px;
-    background:rgba(14,15,20,0.88); backdrop-filter:blur(12px);
-    border-bottom:1px solid var(--border);
-    transition: background 0.3s;
-  }
-  .light-mode .home-nav { background:rgba(244,242,237,0.9); }
-  .logo { font-family:var(--font-serif); font-size:20px; color:var(--accent); letter-spacing:0.04em; }
-  .logo span { color:var(--text); font-weight:300; }
-  .nav-links { display:flex; align-items:center; gap:28px; }
-  .nav-links a { color:var(--text-muted); text-decoration:none; font-size:13px; cursor:pointer; transition:color 0.2s; }
-  .nav-links a:hover { color:var(--text); }
-  .nav-right { display:flex; align-items:center; gap:12px; }
-
-  .hero {
-    padding: 160px 80px 80px;
-    max-width:1200px; margin:0 auto;
-    display:grid; grid-template-columns:1fr 1fr; gap:80px; align-items:center;
-  }
-  .hero-eyebrow {
-    font-family:var(--font-mono); font-size:11px; color:var(--accent);
-    letter-spacing:0.15em; text-transform:uppercase; margin-bottom:20px;
-    display:flex; align-items:center; gap:10px;
-  }
-  .hero-eyebrow::before { content:''; display:block; width:32px; height:1px; background:var(--accent); }
-  .hero-title {
-    font-family:var(--font-serif); font-size:48px; line-height:1.2;
-    margin-bottom:24px; color:var(--text);
-  }
-  .hero-title em { color:var(--accent); font-style:normal; }
-  .hero-desc { color:var(--text-muted); font-size:16px; line-height:1.8; margin-bottom:40px; }
-  .hero-cta { display:flex; gap:12px; flex-wrap:wrap; }
-
-  .btn-primary {
-    padding:12px 28px; background:var(--accent); color:#0e0f14;
-    border:none; border-radius:var(--radius); font-size:13px; font-weight:600;
-    cursor:pointer; transition:opacity 0.2s; font-family:var(--font-sans);
-  }
-  .btn-primary:hover { opacity:0.88; }
-  .btn-outline {
-    padding:12px 28px; background:transparent; color:var(--text);
-    border:1px solid var(--border-bright); border-radius:var(--radius);
-    font-size:13px; cursor:pointer; transition:border-color 0.2s; font-family:var(--font-sans);
-  }
-  .btn-outline:hover { border-color:var(--accent); color:var(--accent); }
-
-  /* 우측 검색 데모 패널 */
-  .hero-demo {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:12px; padding:28px; box-shadow: var(--shadow);
-  }
-  .demo-searchbar {
-    display:flex; align-items:center; gap:10px;
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:6px; padding:10px 14px; margin-bottom:20px;
-  }
-  .demo-searchbar input {
-    background:none; border:none; outline:none; color:var(--text);
-    font-family:var(--font-sans); font-size:14px; flex:1;
-  }
-  .demo-searchbar .search-icon { color:var(--text-dim); font-size:16px; }
-  .demo-tag { display:inline-flex; align-items:center; gap:6px; padding:4px 10px;
-    background:var(--accent-dim); border:1px solid var(--accent);
-    color:var(--accent); border-radius:20px; font-size:11px; margin:3px; cursor:pointer; }
-  .demo-tag:hover { background:var(--accent); color:#0e0f14; }
-  .demo-result-item {
-    padding:14px; background:var(--surface2); border-radius:6px;
-    border-left:3px solid var(--accent); margin-bottom:10px; cursor:pointer;
-    transition:border-color 0.2s;
-  }
-  .demo-result-item:hover { border-left-color:var(--blue); }
-  .demo-result-item.blue { border-left-color:var(--blue); }
-  .result-court { font-size:10px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:4px; }
-  .result-title { font-size:13px; font-weight:500; margin-bottom:4px; }
-  .result-tags { display:flex; gap:6px; flex-wrap:wrap; }
-  .tag-small { padding:2px 8px; border-radius:3px; font-size:10px; font-family:var(--font-mono); }
-  .tag-헌법 { background:rgba(200,169,110,0.15); color:var(--accent); }
-  .tag-형법 { background:rgba(91,141,238,0.15); color:var(--blue); }
-  .tag-민법 { background:rgba(92,200,120,0.15); color:var(--green); }
-
-  /* 기능 섹션 */
-  .features { max-width:1200px; margin:0 auto; padding:60px 80px; }
-  .section-label { font-family:var(--font-mono); font-size:11px; color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase; margin-bottom:40px; }
-  .features-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
-  .feature-card {
-    background:var(--surface); border:1px solid var(--border);
-    border-radius:8px; padding:28px;
-    transition: border-color 0.2s, transform 0.2s;
-  }
-  .feature-card:hover { border-color:var(--accent); transform:translateY(-2px); }
-  .feature-icon { font-size:24px; margin-bottom:16px; }
-  .feature-title { font-weight:600; margin-bottom:8px; color:var(--text); }
-  .feature-desc { font-size:13px; color:var(--text-muted); line-height:1.7; }
-
-  /* ══════════════════════════════════
-     DETAIL PAGE (판례 상세 뷰어)
-  ══════════════════════════════════ */
-  #detail { min-height:100vh; display:none; }
-  #detail.active { display:flex; flex-direction:column; }
-
-  .detail-topbar {
-    position:sticky; top:0; z-index:100;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 20px; height:52px;
-    background:var(--surface); border-bottom:1px solid var(--border);
-  }
-  .topbar-left { display:flex; align-items:center; gap:14px; }
-  .topbar-logo { font-family:var(--font-serif); font-size:16px; color:var(--accent); cursor:pointer; }
-  .topbar-divider { width:1px; height:20px; background:var(--border); }
-  .topbar-case { font-size:13px; color:var(--text-muted); font-family:var(--font-mono); }
-  .topbar-right { display:flex; align-items:center; gap:8px; }
-
-  /* 3 패널 레이아웃 */
-  .detail-body {
-    flex:1; display:grid;
-    grid-template-columns:260px 1fr 320px;
-    height: calc(100vh - 52px);
-    overflow: hidden;
-  }
-
-  /* 좌측 패널: TOC / 조문 목록 */
-  .panel-left {
-    background:var(--surface); border-right:1px solid var(--border);
-    overflow-y:auto; padding:20px 0;
-  }
-  .panel-section-title {
-    padding:0 18px; margin-bottom:10px;
-    font-family:var(--font-mono); font-size:10px; color:var(--text-dim);
-    letter-spacing:0.1em; text-transform:uppercase;
-  }
-  .toc-item {
-    padding:8px 18px; cursor:pointer; font-size:12px; color:var(--text-muted);
-    border-left:2px solid transparent; transition:all 0.15s;
-    display:flex; justify-content:space-between; align-items:center;
-  }
-  .toc-item:hover { background:var(--surface2); color:var(--text); }
-  .toc-item.active { border-left-color:var(--accent); color:var(--accent); background:var(--accent-glow); }
-  .toc-item .article-num { font-family:var(--font-mono); font-size:10px; color:var(--text-dim); }
-  .toc-badge { font-size:9px; padding:1px 5px; border-radius:3px; background:var(--blue-dim); color:var(--blue); font-family:var(--font-mono); }
-  .toc-divider { height:1px; background:var(--border); margin:12px 0; }
-
-  /* 가운데 패널: 본문 */
-  .panel-center {
-    overflow-y:auto; background:var(--bg);
-    padding:40px 48px;
-  }
-  .case-header { margin-bottom:36px; }
-  .case-court-badge {
-    display:inline-flex; align-items:center; gap:8px;
-    padding:6px 14px; border:1px solid var(--accent);
-    border-radius:4px; font-size:11px; font-family:var(--font-mono);
-    color:var(--accent); margin-bottom:16px;
-  }
-  .case-title {
-    font-family:var(--font-serif); font-size:26px; line-height:1.4;
-    color:var(--text); margin-bottom:12px;
-  }
-  .case-meta { display:flex; gap:20px; flex-wrap:wrap; }
-  .meta-item { font-size:12px; color:var(--text-muted); font-family:var(--font-mono); }
-  .meta-label { color:var(--text-dim); margin-right:6px; }
-
-  .law-section { margin-bottom:32px; }
-  .law-section-title {
-    font-family:var(--font-serif); font-size:16px; font-weight:600;
-    color:var(--accent); margin-bottom:14px;
-    display:flex; align-items:center; gap:10px;
-    padding-bottom:8px; border-bottom:1px solid var(--border);
-  }
-  .law-section-title .num { font-family:var(--font-mono); font-size:12px; color:var(--text-dim); }
-
-  .law-text {
-    font-family:var(--font-serif); font-size:15px; line-height:2;
-    color:var(--text); word-break:keep-all;
-  }
-  /* 법률 용어 하이라이트 */
-  .term {
-    border-bottom:1px dashed var(--accent); color:var(--accent);
-    cursor:pointer; position:relative; transition:background 0.15s;
-  }
-  .term:hover { background:var(--accent-dim); border-radius:2px; }
-  /* 판결 하이라이트 */
-  .highlight-key {
-    background:rgba(200,169,110,0.12); border-radius:2px;
-    padding:1px 2px;
-  }
-  .highlight-blue { background:rgba(91,141,238,0.1); border-radius:2px; padding:1px 2px; }
-
-  /* 조문 박스 */
-  .statute-box {
-    background:var(--surface); border:1px solid var(--border);
-    border-left:3px solid var(--blue); border-radius:6px;
-    padding:16px 20px; margin:16px 0; font-size:13px;
-    font-family:var(--font-mono); line-height:1.8; color:var(--text-muted);
-  }
-  .statute-box .statute-title { color:var(--blue); font-size:11px; margin-bottom:8px; font-weight:500; }
-
-  /* 뷰어 툴바 */
-  .viewer-toolbar {
-    display:flex; align-items:center; gap:8px; margin-bottom:28px;
-    padding-bottom:16px; border-bottom:1px solid var(--border);
-    flex-wrap:wrap;
-  }
-  .toolbar-btn {
-    padding:6px 14px; background:var(--surface2); border:1px solid var(--border);
-    border-radius:4px; color:var(--text-muted); font-size:12px; cursor:pointer;
-    transition:all 0.15s; display:flex; align-items:center; gap:6px;
-    font-family:var(--font-sans);
-  }
-  .toolbar-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .toolbar-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
-  .toolbar-sep { width:1px; height:20px; background:var(--border); }
-
-  /* 폰트 크기 슬라이더 */
-  .font-control { display:flex; align-items:center; gap:8px; }
-  .font-control span { font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
-  input[type=range] {
-    width:80px; accent-color:var(--accent); cursor:pointer;
-  }
-
-  /* 우측 패널: AI 보조 + 연계 판례 */
-  .panel-right {
-    background:var(--surface); border-left:1px solid var(--border);
-    overflow-y:auto; display:flex; flex-direction:column;
-  }
-  .panel-tabs {
-    display:flex; border-bottom:1px solid var(--border); flex-shrink:0;
-  }
-  .panel-tab {
-    flex:1; padding:12px 8px; text-align:center; font-size:12px;
-    color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent;
-    transition:all 0.15s;
-  }
-  .panel-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-  .panel-content { padding:20px; overflow-y:auto; flex:1; }
-
-  /* 용어 설명 카드 */
-  .term-card {
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:6px; padding:16px; margin-bottom:12px;
-  }
-  .term-card-word { font-weight:600; color:var(--accent); font-size:14px; margin-bottom:6px; }
-  .term-card-hanja { font-size:11px; color:var(--text-dim); font-family:var(--font-mono); margin-bottom:8px; }
-  .term-card-def { font-size:13px; color:var(--text-muted); line-height:1.7; }
-  .term-card-law { font-size:11px; font-family:var(--font-mono); color:var(--blue); margin-top:8px; }
-
-  /* 연계 판례 카드 */
-  .related-section-title {
-    font-size:11px; font-family:var(--font-mono); color:var(--text-dim);
-    letter-spacing:0.1em; text-transform:uppercase; margin-bottom:12px;
-    display:flex; align-items:center; gap:8px;
-  }
-  .related-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
-  .related-card {
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:6px; padding:14px; margin-bottom:8px; cursor:pointer;
-    transition:border-color 0.15s;
-  }
-  .related-card:hover { border-color:var(--blue); }
-  .related-card.upper { border-left:3px solid var(--purple); }
-  .related-card.similar { border-left:3px solid var(--accent); }
-  .related-card.lower { border-left:3px solid var(--green); }
-  .related-type { font-size:10px; font-family:var(--font-mono); margin-bottom:4px; }
-  .related-type.upper { color:var(--purple); }
-  .related-type.similar { color:var(--accent); }
-  .related-type.lower { color:var(--green); }
-  .related-title { font-size:12px; font-weight:500; margin-bottom:4px; line-height:1.5; }
-  .related-meta { font-size:10px; font-family:var(--font-mono); color:var(--text-dim); }
-  .related-similarity {
-    display:inline-block; margin-top:6px; font-size:10px;
-    font-family:var(--font-mono); padding:2px 6px;
-    background:var(--accent-dim); color:var(--accent); border-radius:3px;
-  }
-
-  /* AI 요약 박스 */
-  .ai-summary {
-    background:linear-gradient(135deg, rgba(91,141,238,0.08), rgba(200,169,110,0.05));
-    border:1px solid var(--border); border-radius:8px; padding:18px; margin-bottom:16px;
-  }
-  .ai-label {
-    display:flex; align-items:center; gap:6px; margin-bottom:10px;
-    font-size:10px; font-family:var(--font-mono); color:var(--text-muted); letter-spacing:0.1em;
-  }
-  .ai-dot { width:6px; height:6px; border-radius:50%; background:var(--blue); animation:pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
-  .ai-summary p { font-size:13px; color:var(--text); line-height:1.8; }
-
-  /* 용어 팝오버 */
-  .term-popover {
-    position:fixed; z-index:200; background:var(--surface);
-    border:1px solid var(--accent); border-radius:8px; padding:16px;
-    max-width:280px; box-shadow:0 8px 32px rgba(0,0,0,0.5);
-    display:none; pointer-events:none;
-  }
-  .term-popover.show { display:block; }
-  .popover-word { font-weight:700; color:var(--accent); margin-bottom:6px; }
-  .popover-def { font-size:12px; color:var(--text-muted); line-height:1.7; }
-  .popover-close { font-size:10px; color:var(--text-dim); margin-top:8px; font-family:var(--font-mono); }
-
-  /* 공통 UI 컴포넌트 */
-  .icon-btn {
-    width:30px; height:30px; display:flex; align-items:center; justify-content:center;
-    background:var(--surface2); border:1px solid var(--border); border-radius:4px;
-    cursor:pointer; color:var(--text-muted); transition:all 0.15s;
-    font-size:13px;
-  }
-  .icon-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .icon-btn.active { background:var(--accent-dim); border-color:var(--accent); color:var(--accent); }
-
-  /* 검색바 */
-  .search-bar {
-    display:flex; align-items:center; gap:8px;
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:4px; padding:6px 12px; width:200px;
-  }
-  .search-bar input {
-    background:none; border:none; outline:none; color:var(--text);
-    font-family:var(--font-sans); font-size:12px; width:100%;
-  }
-  .search-bar input::placeholder { color:var(--text-dim); }
-
-  /* 스크롤바 */
-  ::-webkit-scrollbar { width:5px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-  ::-webkit-scrollbar-thumb:hover { background:var(--border-bright); }
-
-  /* 토글 스위치 */
-  .toggle { position:relative; width:36px; height:20px; }
-  .toggle input { opacity:0; width:0; height:0; }
-  .toggle-slider {
-    position:absolute; cursor:pointer; top:0;left:0;right:0;bottom:0;
-    background:var(--surface2); border:1px solid var(--border);
-    border-radius:20px; transition:0.3s;
-  }
-  .toggle-slider::before {
-    content:''; position:absolute; height:12px; width:12px;
-    left:3px; bottom:3px; background:var(--text-dim);
-    border-radius:50%; transition:0.3s;
-  }
-  .toggle input:checked + .toggle-slider { background:var(--accent-dim); border-color:var(--accent); }
-  .toggle input:checked + .toggle-slider::before { transform:translateX(16px); background:var(--accent); }
-
-  /* 선택 하이라이트 모드 */
-  .panel-content .hint {
-    font-size:12px; color:var(--text-dim); text-align:center;
-    padding:20px 0; line-height:1.7;
-  }
-
-  /* 진행률 바 */
-  .reading-progress {
-    position:fixed; top:52px; left:0; height:2px;
-    background:var(--accent); z-index:99; transition:width 0.1s;
-    width:0%;
-  }
-
-  /* 코딩 모드: 모노스페이스 */
-  .code-mode .law-text { font-family:var(--font-mono); font-size:13px; line-height:1.9; }
-  .code-mode .case-title { font-family:var(--font-mono); }
-
-  /* 애니메이션 */
-  @keyframes fadeUp { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
-  .animate-in { animation:fadeUp 0.4s ease forwards; }
-
-  .chip {
-    display:inline-flex; align-items:center; gap:4px; padding:3px 10px;
-    border-radius:12px; font-size:11px; font-family:var(--font-mono);
-  }
-  .chip-gold { background:var(--accent-dim); color:var(--accent); border:1px solid rgba(200,169,110,0.3); }
-  .chip-blue { background:var(--blue-dim); color:var(--blue); border:1px solid rgba(91,141,238,0.3); }
+:root{--bg:#0e0f14;--surface:#161820;--surface2:#1e2028;--border:#2a2d3a;--border-bright:#3a3f52;--text:#dde2f0;--text-muted:#7b82a0;--text-dim:#4a5070;--accent:#c8a96e;--accent-dim:rgba(200,169,110,0.15);--accent-glow:rgba(200,169,110,0.06);--blue:#5b8dee;--blue-dim:rgba(91,141,238,0.15);--green:#5cc878;--purple:#a07de0;--red:#e05c5c;--font-serif:'Noto Serif KR',serif;--font-sans:'Noto Sans KR',sans-serif;--font-mono:'JetBrains Mono',monospace;--radius:6px;--shadow:0 4px 24px rgba(0,0,0,0.4);}
+.light-mode{--bg:#f4f2ed;--surface:#faf9f6;--surface2:#ede9e0;--border:#d8d0c0;--border-bright:#b8a890;--text:#1a1810;--text-muted:#6b6050;--text-dim:#a09080;--accent:#8b6914;--accent-dim:rgba(139,105,20,0.1);--blue:#2355c4;--blue-dim:rgba(35,85,196,0.12);--shadow:0 4px 24px rgba(0,0,0,0.12);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:14px;line-height:1.6;transition:background .3s,color .3s;}
+.page{display:none;}.page.active{display:block;}
+/* NAV */
+.home-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:60px;background:rgba(14,15,20,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+.light-mode .home-nav{background:rgba(244,242,237,.9);}
+.logo{font-family:var(--font-serif);font-size:20px;color:var(--accent);letter-spacing:.04em;cursor:pointer;}
+.logo span{color:var(--text);font-weight:300;}
+.nav-links{display:flex;align-items:center;gap:24px;}
+.nav-links a{color:var(--text-muted);text-decoration:none;font-size:13px;cursor:pointer;transition:color .2s;}
+.nav-links a:hover,.nav-links a.active{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+/* BUTTONS */
+.btn-primary{padding:9px 22px;background:var(--accent);color:#0e0f14;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s;font-family:var(--font-sans);}
+.btn-primary:hover{opacity:.88;}
+.btn-outline{padding:9px 22px;background:transparent;color:var(--text);border:1px solid var(--border-bright);border-radius:var(--radius);font-size:13px;cursor:pointer;transition:all .2s;font-family:var(--font-sans);}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);}
+.icon-btn{width:30px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--surface2);border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--text-muted);font-size:13px;}
+.icon-btn:hover{border-color:var(--accent);color:var(--accent);}
+/* HERO */
+.hero{padding:140px 80px 60px;max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;}
+.hero-eyebrow{font-family:var(--font-mono);font-size:11px;color:var(--accent);letter-spacing:.15em;text-transform:uppercase;margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.hero-eyebrow::before{content:'';display:block;width:30px;height:1px;background:var(--accent);}
+.hero-title{font-family:var(--font-serif);font-size:44px;line-height:1.2;margin-bottom:22px;}
+.hero-title em{color:var(--accent);font-style:normal;}
+.hero-desc{color:var(--text-muted);font-size:15px;line-height:1.9;margin-bottom:32px;}
+/* SEARCH PANEL */
+.hero-search{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px;box-shadow:var(--shadow);}
+.stype-tabs{display:flex;gap:0;margin-bottom:14px;border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.stype-btn{flex:1;padding:8px;font-size:12px;font-family:var(--font-mono);background:transparent;border:none;color:var(--text-muted);cursor:pointer;transition:all .15s;}
+.stype-btn.active{background:var(--accent-dim);color:var(--accent);}
+.msbar{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 12px;margin-bottom:12px;}
+.msbar input{background:none;border:none;outline:none;color:var(--text);font-family:var(--font-sans);font-size:14px;flex:1;}
+.msbar input::placeholder{color:var(--text-dim);}
+.go-btn{background:var(--accent);border:none;border-radius:4px;padding:6px 14px;color:#0e0f14;font-weight:600;font-size:12px;cursor:pointer;font-family:var(--font-sans);white-space:nowrap;}
+.go-btn:hover{opacity:.85;}
+.frow{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+.fsel{background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);font-size:12px;padding:5px 9px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);}
+.fsel:focus{outline:none;border-color:var(--accent);}
+.tag-row{margin-bottom:12px;}
+.dtag{display:inline-flex;align-items:center;padding:3px 9px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);border-radius:20px;font-size:11px;margin:2px;cursor:pointer;font-family:var(--font-mono);}
+.dtag:hover{background:var(--accent);color:#0e0f14;}
+.ri{padding:11px;background:var(--surface2);border-radius:6px;border-left:3px solid var(--accent);margin-bottom:7px;cursor:pointer;transition:all .15s;}
+.ri:hover{border-left-color:var(--blue);background:var(--surface);}
+.ri.law-ri{border-left-color:var(--blue);}
+.rc{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:2px;}
+.rt{font-size:13px;font-weight:500;margin-bottom:3px;}
+.rtags{display:flex;gap:4px;flex-wrap:wrap;}
+.ts{padding:2px 7px;border-radius:3px;font-size:10px;font-family:var(--font-mono);}
+.t형법{background:rgba(91,141,238,.15);color:var(--blue);}.t헌법{background:rgba(200,169,110,.15);color:var(--accent);}.t민법{background:rgba(92,200,120,.15);color:var(--green);}.tlaw{background:rgba(160,125,224,.15);color:var(--purple);}
+.no-res{text-align:center;padding:16px;color:var(--text-dim);font-size:13px;}
+/* FEATURES */
+.features{max-width:1300px;margin:0 auto;padding:32px 80px 80px;}
+.slabel{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:28px;}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.fcard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:22px;transition:all .2s;}
+.fcard:hover{border-color:var(--accent);transform:translateY(-2px);}
+/* SUBPAGE */
+.sub-nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:52px;background:var(--surface);border-bottom:1px solid var(--border);}
+.sub-content{padding-top:52px;}
+.sub-header{padding:28px 44px 0;border-bottom:1px solid var(--border);}
+.sub-header h2{font-family:var(--font-serif);font-size:20px;padding-bottom:14px;display:inline-block;border-bottom:2px solid var(--accent);margin-bottom:-1px;}
+.sub-body{padding:28px 44px;max-width:1100px;}
+.full-sb{display:flex;gap:8px;margin-bottom:18px;}
+.full-sb input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:9px 14px;color:var(--text);font-family:var(--font-sans);font-size:14px;outline:none;}
+.full-sb input:focus{border-color:var(--accent);}
+.bri{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 18px;margin-bottom:9px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;}
+.bri:hover{border-color:var(--accent);}
+.bri-court{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-bottom:4px;}
+.bri-title{font-size:14px;font-weight:500;margin-bottom:5px;}
+.badge{font-size:10px;font-family:var(--font-mono);padding:2px 7px;border-radius:3px;margin-top:4px;display:inline-block;}
+.badge-c{background:var(--accent-dim);color:var(--accent);}.badge-l{background:var(--blue-dim);color:var(--blue);}
+.lgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:22px;}
+.lcat{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;text-align:center;cursor:pointer;transition:all .15s;}
+.lcat:hover{border-color:var(--accent);}
+.ggrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.gcard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;}
+.gcard h3{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--accent);}
+.gstep{display:flex;gap:10px;margin-bottom:9px;}
+.snum{width:20px;height:20px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-size:10px;font-family:var(--font-mono);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+/* DETAIL */
+#detail{min-height:100vh;}
+#detail.active{display:flex;flex-direction:column;}
+.dtopbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:52px;background:var(--surface);border-bottom:1px solid var(--border);}
+.tbl{display:flex;align-items:center;gap:8px;}
+.tlogo{font-family:var(--font-serif);font-size:16px;color:var(--accent);cursor:pointer;}
+.tdiv{width:1px;height:18px;background:var(--border);}
+.tcase{font-size:12px;color:var(--text-muted);font-family:var(--font-mono);}
+.tbr{display:flex;align-items:center;gap:5px;}
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-family:var(--font-mono);}
+.chip-g{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(200,169,110,.3);}
+.chip-b{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(91,141,238,.3);}
+.rp{position:fixed;top:52px;left:0;height:2px;background:var(--accent);z-index:99;width:0%;transition:width .1s;}
+.dbody{flex:1;display:grid;grid-template-columns:236px 1fr 296px;height:calc(100vh - 52px);overflow:hidden;}
+/* LEFT */
+.pleft{background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:14px 0;}
+.pst{padding:0 12px;margin-bottom:7px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;}
+.toc{padding:6px 12px;cursor:pointer;font-size:12px;color:var(--text-muted);border-left:2px solid transparent;transition:all .15s;display:flex;justify-content:space-between;align-items:center;}
+.toc:hover{background:var(--surface2);color:var(--text);}
+.toc.active{border-left-color:var(--accent);color:var(--accent);background:var(--accent-glow);}
+.toc-badge{font-size:9px;padding:1px 5px;border-radius:3px;background:var(--blue-dim);color:var(--blue);font-family:var(--font-mono);}
+.tdivider{height:1px;background:var(--border);margin:9px 0;}
+/* LAW REF */
+.law-ref{border-bottom:1px solid var(--blue);color:var(--blue);cursor:pointer;padding:0 1px;transition:all .15s;}
+.law-ref:hover{background:var(--blue-dim);border-radius:2px;}
+/* CENTER */
+.pcenter{overflow-y:auto;background:var(--bg);padding:32px 42px;}
+.vtb{display:flex;align-items:center;gap:6px;margin-bottom:22px;padding-bottom:12px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.tbtn{padding:5px 11px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .15s;font-family:var(--font-sans);}
+.tbtn:hover{border-color:var(--accent);color:var(--accent);}
+.tbtn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.tsep{width:1px;height:18px;background:var(--border);}
+.fctl{display:flex;align-items:center;gap:6px;}
+.fctl span{font-size:11px;color:var(--text-muted);}
+input[type=range]{width:68px;accent-color:var(--accent);cursor:pointer;}
+/* INLINE SEARCH */
+.isrch{display:flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:3px 9px;}
+.isrch input{background:none;border:none;outline:none;color:var(--text);font-size:12px;width:110px;}
+.isrch input::placeholder{color:var(--text-dim);}
+.isrch .sc{font-size:10px;font-family:var(--font-mono);color:var(--text-dim);}
+.isrch .sn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;}
+.sh{background:rgba(200,169,110,.3);border-radius:2px;}
+.sh.cur{background:rgba(200,169,110,.65);}
+/* CASE BODY */
+.case-hd{margin-bottom:28px;}
+.cb{display:inline-flex;align-items:center;padding:5px 11px;border:1px solid var(--accent);border-radius:4px;font-size:11px;font-family:var(--font-mono);color:var(--accent);margin-bottom:12px;}
+.ctitle{font-family:var(--font-serif);font-size:23px;line-height:1.4;margin-bottom:9px;}
+.cmeta{display:flex;gap:14px;flex-wrap:wrap;}
+.mi{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);}
+.ml{color:var(--text-dim);margin-right:4px;}
+.ls{margin-bottom:26px;}
+.lt{font-family:var(--font-serif);font-size:15px;line-height:1.4;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.ln{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);}
+.lbody{font-family:var(--font-serif);font-size:15px;line-height:2;color:var(--text);word-break:keep-all;cursor:text;}
+.code-mode .lbody{font-family:var(--font-mono);font-size:13px;}
+/* TERM */
+.term{border-bottom:1px dashed var(--accent);color:var(--accent);cursor:pointer;transition:background .15s;}
+.term:hover{background:var(--accent-dim);border-radius:2px;}
+/* USER HIGHLIGHT */
+.uhl{background:rgba(255,220,80,.28);border-radius:2px;cursor:pointer;}
+.uhl:hover{background:rgba(255,100,80,.22);}
+/* TIMELINE */
+.tl{padding:0 10px;}
+.tli{display:flex;gap:8px;padding:7px 0 7px 10px;border-left:2px solid var(--border);margin-left:5px;position:relative;}
+.tli.cur{border-left-color:var(--purple);}
+.tli::before{content:'';position:absolute;left:-5px;top:11px;width:8px;height:8px;border-radius:50%;background:var(--border);}
+.tli.cur::before{background:var(--purple);}
+.tll{font-size:10px;font-family:var(--font-mono);color:var(--text-dim);}
+.tlc{font-size:11px;color:var(--text-muted);cursor:pointer;}
+.tlc:hover{color:var(--blue);}
+.tld{font-size:10px;color:var(--text-dim);font-family:var(--font-mono);}
+/* RIGHT */
+.pright{background:var(--surface);border-left:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+.ptabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ptab{flex:1;padding:10px 5px;text-align:center;font-size:12px;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.ptab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.pc{padding:14px;overflow-y:auto;flex:1;}
+.tcrd{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:9px;cursor:pointer;transition:border-color .15s;}
+.tcrd:hover{border-color:var(--accent);}
+.tw{font-weight:600;color:var(--accent);font-size:14px;margin-bottom:3px;}
+.th{font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:5px;}
+.td{font-size:12px;color:var(--text-muted);line-height:1.7;}
+.tl2{font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-top:5px;}
+.hint{font-size:12px;color:var(--text-dim);text-align:center;padding:14px 0;line-height:1.7;}
+.rst{font-size:10px;font-family:var(--font-mono);color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;margin-top:12px;display:flex;align-items:center;gap:6px;}
+.rst::after{content:'';flex:1;height:1px;background:var(--border);}
+.rcrd{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:11px;margin-bottom:7px;cursor:pointer;transition:all .15s;}
+.rcrd:hover{border-color:var(--blue);transform:translateX(2px);}
+.rcrd.up{border-left:3px solid var(--purple);}
+.rcrd.dn{border-left:3px solid var(--green);}
+.rtype{font-size:10px;font-family:var(--font-mono);margin-bottom:2px;}
+.rtype.up{color:var(--purple);}.rtype.dn{color:var(--green);}
+.rtitle{font-size:12px;font-weight:500;margin-bottom:2px;line-height:1.5;}
+.rmeta{font-size:10px;font-family:var(--font-mono);color:var(--text-dim);}
+/* MODALS */
+.moverlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:none;align-items:center;justify-content:center;}
+.moverlay.show{display:flex;}
+.mbox{background:var(--surface);border:1px solid var(--border);border-radius:10px;width:580px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,.5);}
+.mhdr{padding:16px 20px 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;}
+.mtitle{font-family:var(--font-serif);font-size:17px;}
+.msub{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;}
+.mclose{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:18px;}
+.mclose:hover{color:var(--text);}
+.mbody{padding:18px 20px;overflow-y:auto;flex:1;}
+.mftr{padding:12px 20px;border-bottom:1px solid var(--border);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.mref{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);}
+.gobtn{padding:7px 16px;background:var(--accent);color:#0e0f14;border:none;border-radius:4px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-sans);}
+.gobtn:hover{opacity:.88;}
+/* TERM EDIT */
+.teover{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;display:none;align-items:center;justify-content:center;}
+.teover.show{display:flex;}
+.temod{background:var(--surface);border:1px solid var(--border);border-radius:10px;width:540px;max-width:90vw;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,.5);}
+.tehdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.tebody{padding:14px 18px;overflow-y:auto;flex:1;}
+.ter2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:7px;}
+.teinp{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:7px 9px;color:var(--text);font-family:var(--font-sans);font-size:13px;width:100%;outline:none;}
+.teinp:focus{border-color:var(--accent);}
+.teinp.full{grid-column:1/-1;}
+textarea.teinp{resize:vertical;min-height:60px;}
+.teli{display:flex;align-items:flex-start;gap:7px;padding:9px;background:var(--surface2);border-radius:4px;margin-bottom:5px;border:1px solid var(--border);}
+.teliw{font-weight:600;color:var(--accent);font-size:12px;}
+.telid{font-size:11px;color:var(--text-muted);margin-top:1px;}
+.tdel{background:none;border:1px solid var(--border);border-radius:3px;color:var(--text-dim);cursor:pointer;padding:2px 6px;font-size:11px;flex-shrink:0;}
+.tdel:hover{border-color:var(--red);color:var(--red);}
+.addtbtn{padding:6px 13px;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);border-radius:4px;font-size:12px;cursor:pointer;font-family:var(--font-sans);}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.ain{animation:fadeUp .35s ease forwards;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 </style>
 </head>
 <body>
 
-<!-- 용어 팝오버 -->
-<div class="term-popover" id="termPopover">
-  <div class="popover-word" id="popoverWord"></div>
-  <div class="popover-def" id="popoverDef"></div>
-  <div class="popover-close">클릭하여 패널에서 자세히 보기 →</div>
+<!-- ═══ 법령 팝업 ═══ -->
+<div class="moverlay" id="lmOver" onclick="closeLM(event)">
+  <div class="mbox">
+    <div class="mhdr"><div><div class="mtitle" id="lmTitle"></div><div class="msub" id="lmSub"></div></div><button class="mclose" onclick="document.getElementById('lmOver').classList.remove('show')">✕</button></div>
+    <div class="mbody"><div class="lbody" id="lmBody"></div></div>
+    <div class="mftr"><span class="mref" id="lmRef"></span><button class="gobtn" id="lmGoBtn">해당 법률로 이동 →</button></div>
+  </div>
+</div>
+<!-- ═══ 용어 편집 ═══ -->
+<div class="teover" id="teOver" onclick="closeTE(event)">
+  <div class="temod">
+    <div class="tehdr"><h3 style="font-size:14px;font-weight:600;">⊞ 용어 사전 편집</h3><button class="mclose" onclick="document.getElementById('teOver').classList.remove('show')">✕</button></div>
+    <div class="tebody">
+      <div style="margin-bottom:14px;">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:500;">새 용어 추가</div>
+        <div class="ter2"><input class="teinp" id="nWord" placeholder="용어"><input class="teinp" id="nHanja" placeholder="한자/영문"></div>
+        <div class="ter2"><textarea class="teinp full" id="nDef" placeholder="정의 및 설명"></textarea></div>
+        <div class="ter2"><input class="teinp" id="nLaw" placeholder="관련 법령"><button class="addtbtn" onclick="addTerm()" style="align-self:end;">+ 추가</button></div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:500;">등록 용어 <span id="tCount" style="color:var(--accent);font-family:var(--font-mono);"></span></div>
+      <div id="teList"></div>
+    </div>
+  </div>
 </div>
 
-<!-- ══════════════════════════════════
-     HOME PAGE
-══════════════════════════════════ -->
+<!-- ═══ HOME ═══ -->
 <div class="page active" id="home">
   <nav class="home-nav">
-    <div class="logo">Lex<span>Vis</span></div>
+    <div class="logo" onclick="goHome()">Lex<span>Vis</span></div>
     <div class="nav-links">
-      <a>판례 검색</a>
-      <a>법령 데이터베이스</a>
-      <a>가이드</a>
-      <a>요금제</a>
+      <a id="hn-cases" onclick="goSub('cases')">판례 검색</a>
+      <a id="hn-laws" onclick="goSub('laws')">법령 데이터베이스</a>
+      <a id="hn-guide" onclick="goSub('guide')">가이드</a>
     </div>
     <div class="nav-right">
-      <button class="icon-btn" onclick="toggleTheme()" title="테마 전환">☀</button>
-      <button class="btn-outline" style="padding:8px 16px; font-size:12px;" onclick="goDetail()">무료 체험</button>
-      <button class="btn-primary" style="padding:8px 16px; font-size:12px;" onclick="goDetail()">시작하기</button>
+      <div class="icon-btn" onclick="toggleTheme()">☀</div>
+      <button class="btn-primary" onclick="goDet('case','2023도14521')">법률 &amp; 판례 체험하기 →</button>
     </div>
   </nav>
-
   <section class="hero">
-    <div class="hero-left animate-in">
+    <div class="ain">
       <div class="hero-eyebrow">법률 열람 & 판례 해석 보조</div>
       <h1 class="hero-title">복잡한 법률,<br>이제 <em>명확하게</em><br>읽힙니다</h1>
-      <p class="hero-desc">판례 원문을 읽으며 법률 용어를 즉시 해설받고,<br>유사·상급·하급 연계 판례를 한눈에 파악하세요.<br>다크·라이트·코딩 모드로 최적의 열람 환경을 제공합니다.</p>
-      <div class="hero-cta">
-        <button class="btn-primary" onclick="goDetail()">판례 열람 체험하기 →</button>
-        <button class="btn-outline">데모 영상 보기</button>
+      <p class="hero-desc">판례 원문을 읽으며 법률 용어를 즉시 해설받고,<br>상·하급심 연계 판례를 한눈에 탐색하세요.<br>다크·라이트·코딩 모드로 최적의 열람 환경을 지원합니다.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-primary" onclick="goDet('case','2023도14521')">법률 &amp; 판례 체험하기 →</button>
       </div>
     </div>
-    <div class="hero-right animate-in" style="animation-delay:0.15s;">
-      <div class="hero-demo">
-        <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-muted); margin-bottom:12px; letter-spacing:0.05em;">CASE SEARCH</div>
-        <div class="demo-searchbar">
-          <span class="search-icon">⌕</span>
-          <input placeholder="판례번호, 키워드, 법령명으로 검색..." readonly>
+    <div class="ain" style="animation-delay:.12s;">
+      <div class="hero-search">
+        <div class="stype-tabs">
+          <button class="stype-btn active" id="ht-all" onclick="hTab('all')">전체</button>
+          <button class="stype-btn" id="ht-case" onclick="hTab('case')">판례</button>
+          <button class="stype-btn" id="ht-law" onclick="hTab('law')">법률</button>
         </div>
-        <div style="margin-bottom:14px;">
-          <span class="demo-tag">형법 §250</span>
-          <span class="demo-tag">과실치사</span>
-          <span class="demo-tag">위헌결정</span>
-          <span class="demo-tag">무죄추정</span>
-          <span class="demo-tag">헌재 2024</span>
+        <div class="msbar"><span style="color:var(--text-dim);">⌕</span><input id="hSrch" placeholder="판례번호, 법령명, 키워드 검색..." onkeydown="if(event.key==='Enter')doHS()"><button class="go-btn" onclick="doHS()">검색</button></div>
+        <div class="frow">
+          <select class="fsel" id="hCourt"><option value="">법원 전체</option><option>대법원</option><option>헌법재판소</option><option>고등법원</option><option>지방법원</option></select>
+          <select class="fsel" id="hCat"><option value="">분야 전체</option><option>형법</option><option>민법</option><option>헌법</option><option>상법</option><option>행정법</option><option>노동법</option></select>
+          <select class="fsel" id="hYear"><option value="">연도 전체</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option></select>
         </div>
-        <div onclick="goDetail()" class="demo-result-item" style="cursor:pointer;">
-          <div class="result-court">대법원 · 2023도14521 · 2024.03.14</div>
-          <div class="result-title">업무상과실치사 — 의료과실 성립 요건</div>
-          <div class="result-tags">
-            <span class="tag-small tag-형법">형법</span>
-            <span class="tag-small" style="background:rgba(92,200,120,0.15);color:var(--green);">의료법</span>
-          </div>
+        <div class="tag-row">
+          <span class="dtag" onclick="setSrch('업무상과실')">업무상과실</span>
+          <span class="dtag" onclick="setSrch('형법')">형법</span>
+          <span class="dtag" onclick="setSrch('무죄추정')">무죄추정</span>
+          <span class="dtag" onclick="setSrch('임대차')">임대차</span>
+          <span class="dtag" onclick="setSrch('헌법')">헌법재판</span>
         </div>
-        <div class="demo-result-item blue" onclick="goDetail()" style="cursor:pointer;">
-          <div class="result-court">헌법재판소 · 2022헌바381 · 2024.02.28</div>
-          <div class="result-title">통신비밀보호법 제5조 위헌 여부</div>
-          <div class="result-tags">
-            <span class="tag-small tag-헌법">헌법</span>
-            <span class="tag-small tag-형법">형법</span>
-          </div>
-        </div>
-        <div class="demo-result-item" onclick="goDetail()" style="cursor:pointer;">
-          <div class="result-court">서울고법 · 2023나23400 · 2024.01.19</div>
-          <div class="result-title">임대차 보증금 반환 청구</div>
-          <div class="result-tags">
-            <span class="tag-small tag-민법">민법</span>
-          </div>
-        </div>
-        <div style="text-align:center; margin-top:12px;">
-          <span style="font-size:11px; font-family:var(--font-mono); color:var(--text-dim);">↑ 클릭하여 판례 상세 뷰어 체험</span>
-        </div>
+        <div id="hRes"></div>
       </div>
     </div>
   </section>
-
   <section class="features">
-    <div class="section-label">주요 기능</div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">◑</div>
-        <div class="feature-title">3가지 열람 모드</div>
-        <div class="feature-desc">다크·라이트·코딩(모노스페이스) 모드 즉시 전환. 야간 열람, 출력, 개발자 친화형 뷰를 지원합니다.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⊞</div>
-        <div class="feature-title">법률 전문용어 즉시 해설</div>
-        <div class="feature-desc">본문 내 법률 용어에 마우스를 올리면 한자 병기와 함께 뜻풀이가 즉시 표시됩니다.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⇅</div>
-        <div class="feature-title">연계 판례 3방향 제시</div>
-        <div class="feature-desc">유사 판례, 상급심(대법원·헌재), 하급심 판례를 유사도 점수와 함께 사이드패널에서 바로 탐색합니다.</div>
-      </div>
+    <div class="slabel">주요 기능</div>
+    <div class="fgrid">
+      <div class="fcard"><div style="font-size:20px;margin-bottom:10px;">◑</div><div style="font-weight:600;margin-bottom:6px;">3가지 열람 모드</div><div style="font-size:12px;color:var(--text-muted);line-height:1.7;">다크·라이트·코딩 모드 즉시 전환. 야간 열람과 개발자 친화형 뷰를 지원합니다.</div></div>
+      <div class="fcard"><div style="font-size:20px;margin-bottom:10px;">⊞</div><div style="font-weight:600;margin-bottom:6px;">용어 자동 감지·해설</div><div style="font-size:12px;color:var(--text-muted);line-height:1.7;">본문 내 법률 용어를 자동으로 감지하여 클릭 시 해설 표시. 용어 사전을 직접 추가·수정할 수 있습니다.</div></div>
+      <div class="fcard"><div style="font-size:20px;margin-bottom:10px;">⇅</div><div style="font-weight:600;margin-bottom:6px;">상·하급심 연계 이동</div><div style="font-size:12px;color:var(--text-muted);line-height:1.7;">상급심·하급심 판례를 클릭 한 번으로 이동. 법령은 팝업으로 조문을 바로 확인하고 전문으로 이동합니다.</div></div>
     </div>
   </section>
 </div>
 
-<!-- ══════════════════════════════════
-     DETAIL PAGE (판례 뷰어)
-══════════════════════════════════ -->
-<div class="page" id="detail">
-  <div class="reading-progress" id="readingProgress"></div>
-
-  <!-- 상단 바 -->
-  <div class="detail-topbar">
-    <div class="topbar-left">
-      <div class="topbar-logo" onclick="goHome()">LexVis</div>
-      <div class="topbar-divider"></div>
-      <div class="topbar-case">대법원 2023도14521</div>
-      <span class="chip chip-gold">형법</span>
-      <span class="chip chip-blue">의료법</span>
-    </div>
-    <div class="topbar-right">
-      <div class="search-bar">
-        <span style="color:var(--text-dim); font-size:12px;">⌕</span>
-        <input placeholder="본문 내 검색...">
+<!-- ═══ SUBPAGE ═══ -->
+<div class="page" id="subpage">
+  <nav class="sub-nav">
+    <div class="tbl"><div class="tlogo" onclick="goHome()">LexVis</div><div class="tdiv"></div>
+      <div class="nav-links" style="gap:18px;">
+        <a id="sn-cases" onclick="goSub('cases')">판례 검색</a>
+        <a id="sn-laws" onclick="goSub('laws')">법령 데이터베이스</a>
+        <a id="sn-guide" onclick="goSub('guide')">가이드</a>
       </div>
+    </div>
+    <div class="icon-btn" onclick="toggleTheme()">☀</div>
+  </nav>
+  <div class="sub-content">
+    <!-- 판례 검색 -->
+    <div id="sub-cases">
+      <div class="sub-header"><h2>판례 검색</h2></div>
+      <div class="sub-body">
+        <div class="full-sb"><input id="cSrch" placeholder="판례번호, 키워드, 당사자명..." onkeydown="if(event.key==='Enter')doCS()"><select class="fsel" id="cCourt"><option value="">법원 전체</option><option>대법원</option><option>헌법재판소</option><option>고등법원</option><option>지방법원</option></select><select class="fsel" id="cCat"><option value="">분야 전체</option><option>형법</option><option>민법</option><option>헌법</option><option>상법</option><option>행정법</option></select><button class="go-btn" onclick="doCS()">검색</button></div>
+        <div id="cRes"></div>
+      </div>
+    </div>
+    <!-- 법령 DB -->
+    <div id="sub-laws" style="display:none;">
+      <div class="sub-header"><h2>법령 데이터베이스</h2></div>
+      <div class="sub-body">
+        <div class="full-sb"><input id="lSrch" placeholder="법령명, 조문, 키워드..." onkeydown="if(event.key==='Enter')doLS()"><button class="go-btn" onclick="doLS()">검색</button></div>
+        <div class="lgrid">
+          <div class="lcat" onclick="doLSk('형법')"><div style="font-size:18px;margin-bottom:6px;">⚖</div><div style="font-size:12px;font-weight:500;">형사법</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">형법·형소법 외</div></div>
+          <div class="lcat" onclick="doLSk('민법')"><div style="font-size:18px;margin-bottom:6px;">⊡</div><div style="font-size:12px;font-weight:500;">민사법</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">민법·민소법 외</div></div>
+          <div class="lcat" onclick="doLSk('헌법')"><div style="font-size:18px;margin-bottom:6px;">◈</div><div style="font-size:12px;font-weight:500;">헌법·공법</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">헌법·행정법 외</div></div>
+          <div class="lcat" onclick="doLSk('상법')"><div style="font-size:18px;margin-bottom:6px;">⊞</div><div style="font-size:12px;font-weight:500;">상사법</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">상법·자본시장법 외</div></div>
+          <div class="lcat" onclick="doLSk('노동')"><div style="font-size:18px;margin-bottom:6px;">⊕</div><div style="font-size:12px;font-weight:500;">노동법</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">근기법·노조법 외</div></div>
+          <div class="lcat" onclick="doLSk('의료')"><div style="font-size:18px;margin-bottom:6px;">⊘</div><div style="font-size:12px;font-weight:500;">의료·보건</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">의료법·약사법 외</div></div>
+          <div class="lcat" onclick="doLSk('세법')"><div style="font-size:18px;margin-bottom:6px;">◇</div><div style="font-size:12px;font-weight:500;">세법·재정</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">국세기본법 외</div></div>
+          <div class="lcat" onclick="doLSk('지재')"><div style="font-size:18px;margin-bottom:6px;">◎</div><div style="font-size:12px;font-weight:500;">지식재산</div><div style="font-size:10px;color:var(--text-dim);margin-top:3px;">특허법·저작권법 외</div></div>
+        </div>
+        <div id="lRes"></div>
+      </div>
+    </div>
+    <!-- 가이드 -->
+    <div id="sub-guide" style="display:none;">
+      <div class="sub-header"><h2>사용 가이드</h2></div>
+      <div class="sub-body">
+        <div class="ggrid">
+          <div class="gcard"><h3>판례 열람</h3>
+            <div class="gstep"><div class="snum">1</div><div style="font-size:13px;color:var(--text-muted);">판례번호 또는 키워드로 검색합니다.</div></div>
+            <div class="gstep"><div class="snum">2</div><div style="font-size:13px;color:var(--text-muted);">결과 클릭 → 상세 뷰어로 이동합니다.</div></div>
+            <div class="gstep"><div class="snum">3</div><div style="font-size:13px;color:var(--text-muted);">밑줄 용어 클릭 → 우측 패널 해설 확인.</div></div>
+            <div class="gstep"><div class="snum">4</div><div style="font-size:13px;color:var(--text-muted);">'연계 판례' 탭에서 상·하급심으로 이동.</div></div>
+          </div>
+          <div class="gcard"><h3>법령 열람</h3>
+            <div class="gstep"><div class="snum">1</div><div style="font-size:13px;color:var(--text-muted);">법령 DB에서 카테고리 또는 법령명으로 검색.</div></div>
+            <div class="gstep"><div class="snum">2</div><div style="font-size:13px;color:var(--text-muted);">판례 본문의 파란색 법령명 클릭 → 팝업으로 조문 확인.</div></div>
+            <div class="gstep"><div class="snum">3</div><div style="font-size:13px;color:var(--text-muted);">팝업의 '해당 법률로 이동' 버튼 → 법령 전문 뷰어.</div></div>
+          </div>
+          <div class="gcard"><h3>열람 모드 & 설정</h3>
+            <p style="font-size:13px;color:var(--text-muted);line-height:1.85;">• <strong style="color:var(--text);">다크</strong>: 야간/장시간 열람 최적화<br>• <strong style="color:var(--text);">라이트</strong>: 출력 및 일반 환경<br>• <strong style="color:var(--text);">코딩</strong>: 모노스페이스, 개발자 친화형<br>• <strong style="color:var(--text);">폰트 크기</strong>: 슬라이더 자유 조절<br>• <strong style="color:var(--text);">하이라이트</strong>: 텍스트 드래그 후 버튼 클릭</p>
+          </div>
+          <div class="gcard"><h3>용어 사전 커스터마이징</h3>
+            <p style="font-size:13px;color:var(--text-muted);line-height:1.85;">판례 뷰어 우측 패널 → '용어 해설' 탭 → <strong style="color:var(--accent);">⊞ 용어 사전 편집</strong> 버튼으로 용어 추가·삭제 가능.<br><br><strong style="color:var(--text);">코드로 추가:</strong> JS의 <code style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">DEFAULT_TERMS</code> 객체에 항목 추가.<br>형식: <code style="font-family:var(--font-mono);font-size:11px;color:var(--blue);">'용어':{hanja:'',def:'',law:''}</code></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DETAIL ═══ -->
+<div class="page" id="detail">
+  <div class="rp" id="rp"></div>
+  <div class="dtopbar">
+    <div class="tbl">
+      <div class="tlogo" onclick="goHome()">LexVis</div><div class="tdiv"></div>
+      <div class="tcase" id="dNum">대법원 2023도14521</div>
+      <span class="chip chip-g" id="dChip1">형법</span>
+      <span class="chip chip-b" id="dChip2">의료법</span>
+    </div>
+    <div class="tbr">
+      <div class="isrch"><span style="color:var(--text-dim);font-size:12px;">⌕</span><input id="iSrch" placeholder="본문 검색..." oninput="doIS()" onkeydown="if(event.key==='Enter')nextM()"><span class="sc" id="iCnt"></span><button class="sn" onclick="prevM()">↑</button><button class="sn" onclick="nextM()">↓</button></div>
       <div class="icon-btn" title="북마크">♡</div>
       <div class="icon-btn" title="공유">↗</div>
       <div class="icon-btn" title="인쇄">⊡</div>
-      <div class="icon-btn active" id="themeToggleBtn" onclick="toggleTheme()" title="테마">☀</div>
-      <div class="icon-btn" onclick="goHome()" title="목록으로">✕</div>
+      <div class="icon-btn" onclick="toggleTheme()">☀</div>
+      <div class="icon-btn" onclick="goHome()">✕</div>
     </div>
   </div>
-
-  <!-- 3패널 본문 -->
-  <div class="detail-body">
-
-    <!-- 좌측: 조문 목차 -->
-    <div class="panel-left">
-      <div class="panel-section-title">목차</div>
-      <div class="toc-item active" onclick="scrollToSection('s1')">
-        <span>【주 문】</span>
-        <span class="article-num">I</span>
-      </div>
-      <div class="toc-item" onclick="scrollToSection('s2')">
-        <span>【이 유】</span>
-        <span class="article-num">II</span>
-      </div>
-      <div class="toc-item" style="padding-left:28px;" onclick="scrollToSection('s2')">
-        <span>1. 사건 개요</span>
-      </div>
-      <div class="toc-item" style="padding-left:28px;" onclick="scrollToSection('s3')">
-        <span>2. 쟁점 및 판단</span>
-        <span class="toc-badge">핵심</span>
-      </div>
-      <div class="toc-item" style="padding-left:28px;" onclick="scrollToSection('s4')">
-        <span>3. 관련 법령</span>
-      </div>
-      <div class="toc-item" style="padding-left:28px;" onclick="scrollToSection('s5')">
-        <span>4. 결론</span>
-      </div>
-      <div class="toc-divider"></div>
-      <div class="panel-section-title">관련 법령</div>
-      <div class="toc-item">
-        <span>형법 제268조</span>
-      </div>
-      <div class="toc-item">
-        <span>의료법 제21조</span>
-      </div>
-      <div class="toc-item">
-        <span>민법 제750조</span>
-      </div>
-      <div class="toc-divider"></div>
-      <div class="panel-section-title">시각화</div>
-      <div style="padding:0 14px;">
-        <!-- 미니 타임라인 -->
-        <div style="font-size:11px; color:var(--text-dim); margin-bottom:8px; font-family:var(--font-mono);">심급 타임라인</div>
-        <div style="display:flex; flex-direction:column; gap:0;">
-          <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-left:2px solid var(--purple); padding-left:10px; margin-left:6px;">
-            <div>
-              <div style="font-size:10px; color:var(--purple); font-family:var(--font-mono);">현재 판례</div>
-              <div style="font-size:11px; color:var(--text);">대법원 2023도14521</div>
-              <div style="font-size:10px; color:var(--text-dim);">2024.03.14</div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-left:2px solid var(--border); padding-left:10px; margin-left:6px;">
-            <div>
-              <div style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">원심</div>
-              <div style="font-size:11px; color:var(--text-muted);">서울고법 2022나45120</div>
-              <div style="font-size:10px; color:var(--text-dim);">2023.09.07</div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-left:2px solid var(--border); padding-left:10px; margin-left:6px;">
-            <div>
-              <div style="font-size:10px; color:var(--text-dim); font-family:var(--font-mono);">1심</div>
-              <div style="font-size:11px; color:var(--text-muted);">서울중앙지법 2021가합11240</div>
-              <div style="font-size:10px; color:var(--text-dim);">2022.06.15</div>
-            </div>
-          </div>
-        </div>
+  <div class="dbody">
+    <!-- 좌측 -->
+    <div class="pleft">
+      <div class="pst">목차</div>
+      <div class="toc active" onclick="scTo('s1',this)"><span>【주 문】</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">I</span></div>
+      <div class="toc" onclick="scTo('s2',this)"><span>【이 유】</span><span style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);">II</span></div>
+      <div class="toc" style="padding-left:24px;" onclick="scTo('s2',this)"><span>1. 사건 개요</span></div>
+      <div class="toc" style="padding-left:24px;" onclick="scTo('s3',this)"><span>2. 쟁점 및 판단</span><span class="toc-badge">핵심</span></div>
+      <div class="toc" style="padding-left:24px;" onclick="scTo('s5',this)"><span>3. 결론</span></div>
+      <div class="tdivider"></div>
+      <div class="pst">관련 법령</div>
+      <div class="toc" onclick="openLM('형법 제268조')"><span>형법 제268조</span><span style="font-size:10px;color:var(--blue);">↗</span></div>
+      <div class="toc" onclick="openLM('의료법 제21조')"><span>의료법 제21조</span><span style="font-size:10px;color:var(--blue);">↗</span></div>
+      <div class="toc" onclick="openLM('민법 제750조')"><span>민법 제750조</span><span style="font-size:10px;color:var(--blue);">↗</span></div>
+      <div class="tdivider"></div>
+      <div class="pst">심급 타임라인</div>
+      <div class="tl">
+        <div class="tli cur"><div><div class="tll">현재 (대법원)</div><div class="tlc">2023도14521</div><div class="tld">2024.03.14</div></div></div>
+        <div class="tli"><div><div class="tll">원심 (고법)</div><div class="tlc" onclick="goDet('case','서울고법 2022나45120')">서울고법 2022나45120</div><div class="tld">2023.09.07</div></div></div>
+        <div class="tli"><div><div class="tll">1심 (지법)</div><div class="tlc" onclick="goDet('case','서울중앙지법 2021가합11240')">서울중앙지법 2021가합11240</div><div class="tld">2022.06.15</div></div></div>
       </div>
     </div>
-
-    <!-- 중앙: 판례 본문 -->
-    <div class="panel-center" id="panelCenter" onscroll="updateProgress()">
-
-      <!-- 뷰어 툴바 -->
-      <div class="viewer-toolbar">
-        <button class="toolbar-btn active" id="btnDark" onclick="setMode('dark')">◑ 다크</button>
-        <button class="toolbar-btn" id="btnLight" onclick="setMode('light')">○ 라이트</button>
-        <button class="toolbar-btn" id="btnCode" onclick="setMode('code')">⌨ 코딩</button>
-        <div class="toolbar-sep"></div>
-        <div class="font-control">
-          <span>가</span>
-          <input type="range" min="13" max="20" value="15" oninput="changeFontSize(this.value)">
-          <span style="font-size:16px;">가</span>
-        </div>
-        <div class="toolbar-sep"></div>
-        <button class="toolbar-btn" id="btnHighlight" onclick="toggleHighlight(this)">◈ 용어 강조</button>
-        <button class="toolbar-btn" onclick="showRightTab('terms')">⊞ 용어 패널</button>
-        <button class="toolbar-btn" onclick="showRightTab('related')">⇅ 연계 판례</button>
+    <!-- 중앙 -->
+    <div class="pcenter" id="pCenter" onscroll="updRP()">
+      <div class="vtb">
+        <button class="tbtn active" id="bDark" onclick="setMode('dark')">◑ 다크</button>
+        <button class="tbtn" id="bLight" onclick="setMode('light')">○ 라이트</button>
+        <button class="tbtn" id="bCode" onclick="setMode('code')">⌨ 코딩</button>
+        <div class="tsep"></div>
+        <div class="fctl"><span>가</span><input type="range" min="13" max="20" value="15" oninput="setFS(this.value)"><span style="font-size:16px;">가</span></div>
+        <div class="tsep"></div>
+        <button class="tbtn" onclick="applyHL()">◈ 하이라이트 적용</button>
+        <button class="tbtn" onclick="clearHL()">↺ 지우기</button>
       </div>
-
-      <!-- 판례 헤더 -->
-      <div class="case-header animate-in">
-        <div class="case-court-badge">⚖ 대법원 · 제3부</div>
-        <h1 class="case-title">업무상과실치사 사건<br>— 의료과실 성립 요건에 관한 판단</h1>
-        <div class="case-meta">
-          <div class="meta-item"><span class="meta-label">사건번호</span>2023도14521</div>
-          <div class="meta-item"><span class="meta-label">선고일</span>2024. 03. 14.</div>
-          <div class="meta-item"><span class="meta-label">결과</span>파기환송</div>
-          <div class="meta-item"><span class="meta-label">관여법관</span>대법관 5인</div>
+      <div id="caseBody">
+        <div class="case-hd">
+          <div class="cb" id="dCourtBadge">⚖ 대법원 · 제3부</div>
+          <h1 class="ctitle" id="dTitle">업무상과실치사 사건<br>— 의료과실 성립 요건에 관한 판단</h1>
+          <div class="cmeta">
+            <div class="mi"><span class="ml">사건번호</span><span id="dm1">2023도14521</span></div>
+            <div class="mi"><span class="ml">선고일</span><span id="dm2">2024. 03. 14.</span></div>
+            <div class="mi"><span class="ml">결과</span><span id="dm3">파기환송</span></div>
+            <div class="mi"><span class="ml">관여법관</span>대법관 5인</div>
+          </div>
         </div>
+        <div class="ls" id="s1">
+          <div class="lt"><span class="ln">I</span> 주 문</div>
+          <div class="lbody">원심판결을 파기하고, 사건을 서울고등법원에 환송한다.</div>
+        </div>
+        <div class="ls" id="s2">
+          <div class="lt"><span class="ln">II</span> 이 유</div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;">1. 사건의 개요</div>
+          <div class="lbody" id="bt1">피고인은 서울 소재 ○○병원 외과 전문의로서, 2021. 7. 5. 피해자 甲(당시 58세)에 대하여 복강경 담낭 절제술을 시행하였다. 수술 과정에서 피고인은 총담관을 담낭관으로 오인하여 절제하는 과실을 범하였고, 피해자는 수술 후 패혈증이 발병하여 같은 해 8. 20. 사망하였다.</div>
+        </div>
+        <div class="ls" id="s3">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;">2. 주요 쟁점 및 판단</div>
+          <div class="lbody" id="bt2">이 사건의 핵심 쟁점은 의료행위에 있어서 주의의무 위반의 인정 기준과, 피고인의 행위와 피해자 사망 간의 인과관계 존부이다. 원심은 피고인이 수술 전 충분한 설명의무를 이행하였고, 수술 과정에서의 오인이 불가항력적이었다고 판단하여 무죄를 선고하였다. 그러나 대법원은 이하와 같이 원심의 판단에 법리오해가 있음을 지적한다.</div>
+          <div class="lbody" id="bt3" style="margin-top:12px;">의료행위에 있어서 주의의무의 기준은, 해당 시점의 의학 수준에서 일반적으로 인정되는 의사로서 갖추어야 할 능력과 경험을 갖춘 자가 기울여야 할 주의를 표준으로 삼아야 한다. 기록에 의하면, 피고인은 총담관과 담낭관의 해부학적 위치관계를 조영술로 사전 확인하지 않은 채 수술을 진행하였는바, 이는 당시 의료 수준에 비추어 선관주의의무를 현저히 위반한 것으로 볼 여지가 충분하다. 또한 상당인과관계도 인정되며, 업무상과실과 패혈증 사망 간의 관련성이 명백하다.</div>
+          <div class="lbody" id="bt4" style="margin-top:12px;">나아가 이 사건에는 <span class="law-ref" onclick="openLM('형법 제268조')">형법 제268조</span> 업무상과실치사 규정이 적용되며, <span class="law-ref" onclick="openLM('의료법 제21조')">의료법 제21조</span>에 따른 기록 관리 의무 위반도 병존하는바, <span class="law-ref" onclick="openLM('민법 제750조')">민법 제750조</span>에 기한 손해배상 청구도 가능하다.</div>
+        </div>
+        <div class="ls" id="s5">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;">3. 결 론</div>
+          <div class="lbody">그러므로 원심판결을 파기하고, 사건을 다시 심리·판단하게 하기 위하여 원심법원에 환송하기로 하여, 관여 대법관의 일치된 의견으로 주문과 같이 판결한다.</div>
+          <div style="margin-top:18px;text-align:right;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">대법관 김○○ (재판장) · 이○○ · 박○○ · 최○○ · 정○○</div>
+        </div>
+        <div style="height:80px;"></div>
       </div>
-
-      <!-- 주문 -->
-      <div class="law-section" id="s1">
-        <div class="law-section-title"><span class="num">I</span> 주 문</div>
-        <div class="law-text">
-          원심판결을 파기하고, 사건을 서울고등법원에 환송한다.
-        </div>
-      </div>
-
-      <!-- 이유: 사건개요 -->
-      <div class="law-section" id="s2">
-        <div class="law-section-title"><span class="num">II</span> 이 유</div>
-        <div style="font-weight:600; color:var(--text); margin-bottom:10px; font-size:14px;">1. 사건의 개요</div>
-        <div class="law-text">
-          피고인은 서울 소재 ○○병원 외과 전문의로서, 2021. 7. 5. 피해자 甲(당시 58세)에 대하여
-          복강경 담낭 절제술을 시행하였다. 수술 과정에서 피고인은 <span class="term" onclick="showTerm(event,'총담관')">총담관</span>을 
-          담낭관으로 오인하여 절제하는 <span class="term" onclick="showTerm(event,'과실')">과실</span>을 범하였고, 
-          피해자는 수술 후 <span class="term" onclick="showTerm(event,'패혈증')">패혈증</span>이 발병하여 
-          같은 해 8. 20. 사망하였다.
-        </div>
-      </div>
-
-      <!-- 쟁점 -->
-      <div class="law-section" id="s3">
-        <div style="font-weight:600; color:var(--text); margin-bottom:10px; font-size:14px;">2. 주요 쟁점 및 판단</div>
-
-        <div class="law-text" style="margin-bottom:16px;">
-          이 사건의 핵심 쟁점은 <span class="highlight-key">의료행위에 있어서 
-          <span class="term" onclick="showTerm(event,'주의의무')">주의의무</span> 위반의 인정 기준</span>과,
-          피고인의 행위와 피해자 사망 간의 
-          <span class="term" onclick="showTerm(event,'인과관계')">인과관계</span> 존부이다.
-        </div>
-
-        <!-- 관련 법령 박스 -->
-        <div class="statute-box">
-          <div class="statute-title">▸ 형법 제268조 (업무상과실·중과실 치사상)</div>
-          업무상과실 또는 중대한 과실로 인하여 사람을 사상에 이르게 한 자는 5년 이하의 금고 또는 2천만원 이하의 벌금에 처한다.
-        </div>
-
-        <div class="law-text" style="margin-bottom:16px;">
-          원심은 피고인이 수술 전 충분한 <span class="term" onclick="showTerm(event,'설명의무')">설명의무</span>를 
-          이행하였고, 수술 과정에서의 오인이 불가항력적이었다고 판단하여 
-          <span class="highlight-blue">무죄를 선고</span>하였다.
-          그러나 대법원은 이하와 같이 원심의 판단에 법리 오해가 있음을 지적한다.
-        </div>
-
-        <div class="law-text">
-          <span class="highlight-key">의료행위에 있어서 주의의무의 기준은, 해당 시점의 의학 수준에서 
-          일반적으로 인정되는 의사로서 갖추어야 할 능력과 경험을 갖춘 자가 
-          기울여야 할 주의를 표준으로 삼아야 한다.</span>
-          기록에 의하면, 피고인은 총담관과 담낭관의 주행 방향 및 
-          <span class="term" onclick="showTerm(event,'해부학적')">해부학적</span> 위치관계를 
-          <span class="term" onclick="showTerm(event,'조영술')">조영술</span>로 사전 확인하지 않은 채 
-          수술을 진행하였는바, 이는 당시 의료 수준에 비추어 
-          <span class="term" onclick="showTerm(event,'선관주의의무')">선관주의의무</span>를 
-          현저히 위반한 것으로 볼 여지가 충분하다.
-        </div>
-      </div>
-
-      <!-- 관련 법령 -->
-      <div class="law-section" id="s4">
-        <div style="font-weight:600; color:var(--text); margin-bottom:10px; font-size:14px;">3. 관련 법령 검토</div>
-        <div class="statute-box">
-          <div class="statute-title">▸ 의료법 제21조 (기록 열람 등)</div>
-          의료인이나 의료기관 종사자는 환자가 아닌 다른 사람에게 환자에 관한 기록을 열람하게 하거나 그 사본을 내주는 등 내용을 확인할 수 있게 하여서는 아니 된다.
-        </div>
-        <div class="law-text">
-          또한, <span class="term" onclick="showTerm(event,'인과관계')">인과관계</span>의 
-          판단과 관련하여, 피고인의 총담관 절제 행위와 피해자의 사망 간에는 
-          상당인과관계가 인정됨이 의학적 감정 결과 등 기록상 명백하다.
-        </div>
-      </div>
-
-      <!-- 결론 -->
-      <div class="law-section" id="s5">
-        <div style="font-weight:600; color:var(--text); margin-bottom:10px; font-size:14px;">4. 결 론</div>
-        <div class="law-text">
-          그러므로 원심판결을 파기하고, 사건을 다시 심리·판단하게 하기 위하여
-          원심법원에 환송하기로 하여, 관여 대법관의 일치된 의견으로 
-          주문과 같이 판결한다.
-        </div>
-        <div style="margin-top:20px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-muted);">
-          대법관 김○○ (재판장) · 이○○ · 박○○ · 최○○ · 정○○
-        </div>
-      </div>
-
-      <div style="height:80px;"></div>
     </div>
-
-    <!-- 우측: AI 보조 패널 -->
-    <div class="panel-right">
-      <div class="panel-tabs">
-        <div class="panel-tab active" id="tab-terms" onclick="showRightTab('terms')">용어 해설</div>
-        <div class="panel-tab" id="tab-related" onclick="showRightTab('related')">연계 판례</div>
-        <div class="panel-tab" id="tab-summary" onclick="showRightTab('summary')">AI 요약</div>
+    <!-- 우측 -->
+    <div class="pright">
+      <div class="ptabs">
+        <div class="ptab active" id="pt-terms" onclick="showTab('terms')">용어 해설</div>
+        <div class="ptab" id="pt-related" onclick="showTab('related')">연계 판례</div>
       </div>
-
-      <!-- 용어 해설 탭 -->
-      <div class="panel-content" id="content-terms">
-        <div class="hint">본문의 <strong style="color:var(--accent);">밑줄 용어</strong>를 클릭하면<br>이 곳에서 상세 해설을 확인할 수 있습니다.</div>
-
-        <div id="termDisplay" style="display:none;">
-          <div class="term-card" id="mainTermCard">
-            <div class="term-card-word" id="tcWord"></div>
-            <div class="term-card-hanja" id="tcHanja"></div>
-            <div class="term-card-def" id="tcDef"></div>
-            <div class="term-card-law" id="tcLaw"></div>
-          </div>
-        </div>
-
-        <!-- 기본 용어 목록 -->
-        <div style="margin-top:8px;">
-          <div class="related-section-title">이 판례의 주요 용어</div>
-          <div class="term-card" onclick="showTermCard('주의의무')" style="cursor:pointer;">
-            <div class="term-card-word">주의의무 <span style="font-size:11px;font-weight:300;color:var(--text-muted)">→</span></div>
-            <div class="term-card-hanja">注意義務</div>
-            <div class="term-card-def">법적으로 요구되는 수준의 주의를 기울여야 할 의무...</div>
-          </div>
-          <div class="term-card" onclick="showTermCard('인과관계')" style="cursor:pointer;">
-            <div class="term-card-word">인과관계 <span style="font-size:11px;font-weight:300;color:var(--text-muted)">→</span></div>
-            <div class="term-card-hanja">因果關係</div>
-            <div class="term-card-def">어떤 행위와 결과 사이의 법적 연결 관계...</div>
-          </div>
-          <div class="term-card" onclick="showTermCard('선관주의의무')" style="cursor:pointer;">
-            <div class="term-card-word">선관주의의무 <span style="font-size:11px;font-weight:300;color:var(--text-muted)">→</span></div>
-            <div class="term-card-hanja">善管注意義務</div>
-            <div class="term-card-def">선량한 관리자로서 갖추어야 할 주의의무...</div>
-          </div>
+      <div class="pc" id="pc-terms">
+        <div class="hint" id="termHint">본문의 <strong style="color:var(--accent);">밑줄 용어</strong>를 클릭하면 여기에 해설이 표시됩니다.</div>
+        <div id="termDetail" style="display:none;"></div>
+        <div class="rst" style="margin-top:4px;">이 판례의 주요 용어</div>
+        <div id="autoTerms"></div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <button class="tbtn" style="width:100%;justify-content:center;" onclick="openTE()">⊞ 용어 사전 편집 / 추가</button>
         </div>
       </div>
-
-      <!-- 연계 판례 탭 -->
-      <div class="panel-content" id="content-related" style="display:none;">
-        <div class="related-section-title">상급심 · 동일 사건</div>
-
-        <div class="related-card upper">
-          <div class="related-type upper">▲ 상급심 / 선행 판례</div>
-          <div class="related-title">대법원 2018도16002 — 의료과실 주의의무 기준 확립</div>
-          <div class="related-meta">대법원 · 2019.04.25</div>
-          <div class="related-similarity">유사도 91%</div>
-        </div>
-
-        <div class="related-card upper">
-          <div class="related-type upper">▲ 헌법적 기초</div>
-          <div class="related-title">헌재 2010헌바394 — 업무상과실치사 조항 합헌결정</div>
-          <div class="related-meta">헌법재판소 · 2012.08.23</div>
-          <div class="related-similarity">참조 판례</div>
-        </div>
-
-        <div class="related-section-title" style="margin-top:16px;">유사 판례</div>
-
-        <div class="related-card similar">
-          <div class="related-type similar">◈ 유사 판례</div>
-          <div class="related-title">대법원 2021도8812 — 복강경 수술 중 장기 손상 과실</div>
-          <div class="related-meta">대법원 · 2022.07.14</div>
-          <div class="related-similarity">유사도 87%</div>
-        </div>
-
-        <div class="related-card similar">
-          <div class="related-type similar">◈ 유사 판례</div>
-          <div class="related-title">대법원 2019도11307 — 수술 전 설명의무 위반</div>
-          <div class="related-meta">대법원 · 2020.03.26</div>
-          <div class="related-similarity">유사도 79%</div>
-        </div>
-
-        <div class="related-section-title" style="margin-top:16px;">하급심 · 후속 판례</div>
-
-        <div class="related-card lower">
-          <div class="related-type lower">▼ 원심 (파기환송심)</div>
-          <div class="related-title">서울고법 2024나11200 — 파기환송 후 재판</div>
-          <div class="related-meta">서울고법 · 진행중</div>
-        </div>
-
-        <div class="related-card lower">
-          <div class="related-type lower">▼ 하급심 인용</div>
-          <div class="related-title">서울중앙지법 2024가합20045 — 민사 손해배상 청구</div>
-          <div class="related-meta">서울중앙지법 · 2024.11.08</div>
-          <div class="related-similarity">유사도 72%</div>
-        </div>
-      </div>
-
-      <!-- AI 요약 탭 -->
-      <div class="panel-content" id="content-summary" style="display:none;">
-        <div class="ai-summary">
-          <div class="ai-label"><span class="ai-dot"></span> AI 판례 분석</div>
-          <p>본 판결은 <strong>의료과실에서 주의의무 위반 판단 기준</strong>을 명확히 한 사례입니다. 대법원은 원심의 무죄 판단을 파기하며, 복강경 수술 시 조영술로 담관 구조를 사전 확인하지 않은 것이 의료 수준에 미달한 과실임을 인정했습니다.</p>
-        </div>
-
-        <div class="related-section-title">핵심 법리 3가지</div>
-        <div class="term-card">
-          <div class="term-card-word" style="font-size:12px;">① 주의의무 판단 기준</div>
-          <div class="term-card-def">해당 시점 의학 수준에서 평균적 의사가 기울여야 할 주의를 기준으로 판단</div>
-        </div>
-        <div class="term-card">
-          <div class="term-card-word" style="font-size:12px;">② 인과관계 인정</div>
-          <div class="term-card-def">총담관 절제와 패혈증 사망 간 상당인과관계 명백히 인정</div>
-        </div>
-        <div class="term-card">
-          <div class="term-card-word" style="font-size:12px;">③ 사전 확인의무</div>
-          <div class="term-card-def">수술 전 조영술 등으로 해부학적 구조 확인은 필수적 선관주의 사항</div>
-        </div>
-
-        <div class="related-section-title" style="margin-top:8px;">판결 영향</div>
-        <div style="font-size:13px; color:var(--text-muted); line-height:1.8;">
-          의료과실 소송에서 의료진의 사전 확인 의무를 강화하는 선례로 작용합니다. 이후 유사 사건에서 인과관계 입증 부담이 완화될 가능성이 있습니다.
-        </div>
+      <div class="pc" id="pc-related" style="display:none;">
+        <div id="relUp"></div>
+        <div id="relDn"></div>
       </div>
     </div>
   </div>
 </div>
-
 <script>
-  // ── 용어 데이터 ──
-  const termDB = {
-    '총담관': { hanja: '總膽管 (Choledochus)', def: '간에서 생성된 담즙이 십이지장으로 흘러내려가는 주요 통로. 담낭관과 합류하여 형성되며, 수술 중 담낭관과 혼동되는 경우 치명적 손상을 유발할 수 있다.', law: '관련: 의료법 제21조, 형법 제268조' },
-    '과실': { hanja: '過失 (Negligence)', def: '주의를 기울였다면 회피할 수 있었음에도 부주의로 인해 발생한 법적 위반행위. 의도성(고의)이 없다는 점에서 고의범과 구별된다.', law: '근거: 형법 제14조' },
-    '패혈증': { hanja: '敗血症 (Sepsis)', def: '감염에 의한 전신적 염증 반응 증후군으로, 주요 장기에 기능 부전을 일으킬 수 있다. 의료사고에서 인과관계 판단 시 핵심 의학적 사실로 작용한다.', law: '관련: 의료과오 판례 다수' },
-    '주의의무': { hanja: '注意義務 (Duty of Care)', def: '특정 업무나 행위를 함에 있어 법적으로 요구되는 수준의 주의를 기울여야 할 의무. 의료분야에서는 해당 시점 의학 수준을 기준으로 판단한다.', law: '근거: 형법 제268조, 민법 제750조' },
-    '인과관계': { hanja: '因果關係 (Causal Relationship)', def: '행위와 결과 사이의 법적·사실적 연결. 형사책임에서는 상당인과관계, 즉 해당 행위로부터 그 결과가 발생함이 상당히 예견가능해야 인정된다.', law: '근거: 형법 총칙 판례 법리' },
-    '설명의무': { hanja: '說明義務 (Duty to Disclose)', def: '의료인이 환자에게 시술의 목적, 방법, 위험성 등을 충분히 알려야 하는 의무. 이를 위반하면 환자의 자기결정권 침해로 별도의 손해배상 책임이 발생한다.', law: '근거: 의료법 제24조의2' },
-    '해부학적': { hanja: '解剖學的 (Anatomical)', def: '인체의 구조와 기관의 위치 관계를 다루는 의학 분야에 관한. 수술 시 정확한 해부학적 위치 파악은 의사의 기본적 주의의무에 해당한다.', law: '참조: 의료과실 판단 기준 판례' },
-    '조영술': { hanja: '造影術 (Cholangiography)', def: '조영제를 주입하여 X선으로 담관 등의 구조를 시각화하는 의료 검사법. 복강경 수술 중 담관 손상 예방을 위한 표준 확인 절차로 활용된다.', law: '관련: 의료법 시행규칙' },
-    '선관주의의무': { hanja: '善管注意義務 (Standard of Reasonable Care)', def: '선량한 관리자로서 일반적으로 기울여야 할 주의의무. 민법상 위임관계나 전문직 계약에서 요구되는 높은 수준의 주의 기준이다.', law: '근거: 민법 제681조' },
-  };
+// ═══ 용어 DB ═══
+const DEFAULT_TERMS = {
+  '총담관':{hanja:'總膽管',def:'간에서 생성된 담즙이 십이지장으로 흘러내려가는 주요 통로. 담낭관과 혼동 시 치명적 손상 유발.',law:'관련: 의료법 제21조'},
+  '담낭관':{hanja:'膽囊管',def:'담낭과 총담관을 연결하는 관. 복강경 수술 시 총담관과 혼동 위험.',law:'관련: 의료과실 판례'},
+  '과실':{hanja:'過失 (Negligence)',def:'주의를 기울였다면 회피 가능했음에도 부주의로 발생한 법적 위반행위. 고의와 구별된다.',law:'근거: 형법 제14조'},
+  '패혈증':{hanja:'敗血症 (Sepsis)',def:'감염에 의한 전신적 염증 반응으로 주요 장기 기능 부전을 유발하는 중증 상태.',law:'관련: 의료과오 판례'},
+  '주의의무':{hanja:'注意義務',def:'특정 업무를 수행할 때 법적으로 요구되는 수준의 주의를 기울여야 할 의무.',law:'근거: 형법 제268조, 민법 제750조'},
+  '인과관계':{hanja:'因果關係',def:'행위와 결과 사이의 법적 연결. 형사책임에서는 상당인과관계가 요구된다.',law:'근거: 형법 총칙 법리'},
+  '설명의무':{hanja:'說明義務',def:'의료인이 환자에게 시술 목적·방법·위험성을 충분히 고지해야 할 의무.',law:'근거: 의료법 제24조의2'},
+  '해부학적':{hanja:'解剖學的',def:'인체 구조와 기관 위치 관계에 관한. 수술 시 정확한 해부학적 위치 파악은 기본 주의의무.',law:'참조: 의료과실 기준 판례'},
+  '조영술':{hanja:'造影術',def:'조영제를 이용해 담관 등 구조를 시각화하는 검사법. 복강경 수술 전 표준 확인 절차.',law:'관련: 의료법 시행규칙'},
+  '선관주의의무':{hanja:'善管注意義務',def:'선량한 관리자로서 갖추어야 할 주의의무. 전문직 계약에서 요구되는 높은 수준의 주의 기준.',law:'근거: 민법 제681조'},
+  '파기환송':{hanja:'破棄還送',def:'상급법원이 하급법원 판결을 취소하고 다시 심리하도록 사건을 돌려보내는 것.',law:'근거: 형사소송법 제391조'},
+  '불가항력':{hanja:'不可抗力',def:'외부 힘으로 예측·회피가 불가능한 사유. 인정 시 과실 및 책임이 면제될 수 있다.',law:'관련: 민법 제390조'},
+  '무죄추정':{hanja:'無罪推定',def:'형사 피고인은 유죄 판결이 확정될 때까지 무죄로 추정된다는 원칙.',law:'근거: 헌법 제27조 제4항, 형사소송법 제275조의2'},
+  '법리오해':{hanja:'法理誤解',def:'법원이 법률의 해석·적용에 잘못된 판단을 한 경우. 상소 이유가 된다.',law:'근거: 형사소송법 제383조'},
+  '원심':{hanja:'原審',def:'상소심(상급법원)에서 검토 대상이 되는 하급법원의 판결 또는 해당 법원.',law:'근거: 형사소송법 제357조'},
+  '상당인과관계':{hanja:'相當因果關係',def:'행위와 결과 사이에 일반인이 예측할 수 있는 개연적 연결이 있는 관계.',law:'판례 법리: 대법원 다수'},
+  '업무상과실':{hanja:'業務上過失',def:'특정 업무를 수행하는 과정에서 해당 업무 성질상 요구되는 주의를 게을리한 과실.',law:'근거: 형법 제268조'},
+  '당사자':{hanja:'當事者',def:'소송에서 권리·의무의 주체로 소송 행위를 하는 사람. 원고·피고 또는 검사·피고인.',law:'근거: 형사소송법 제2조'},
+  '항소':{hanja:'抗訴',def:'제1심 판결에 불복하여 제2심 법원에 재판을 청구하는 상소.',law:'근거: 형사소송법 제357조'},
+  '상고':{hanja:'上告',def:'제2심 판결에 불복하여 대법원에 재판을 청구하는 상소.',law:'근거: 형사소송법 제371조'},
+};
 
-  function showTerm(e, word) {
-    e.stopPropagation();
-    showTermCard(word);
-    // 팝오버
-    const pop = document.getElementById('termPopover');
-    pop.style.left = (e.clientX + 12) + 'px';
-    pop.style.top = (e.clientY - 10) + 'px';
-    document.getElementById('popoverWord').textContent = word;
-    document.getElementById('popoverDef').textContent = termDB[word]?.def.substring(0, 60) + '...';
-    pop.classList.add('show');
-    setTimeout(()=> pop.classList.remove('show'), 2200);
-  }
+let termDB = JSON.parse(localStorage.getItem('lv_terms') || 'null') || JSON.parse(JSON.stringify(DEFAULT_TERMS));
+function saveTerms(){localStorage.setItem('lv_terms',JSON.stringify(termDB));}
 
-  function showTermCard(word) {
-    showRightTab('terms');
-    const data = termDB[word];
-    if (!data) return;
-    document.getElementById('tcWord').textContent = word;
-    document.getElementById('tcHanja').textContent = data.hanja;
-    document.getElementById('tcDef').textContent = data.def;
-    document.getElementById('tcLaw').textContent = data.law;
-    document.getElementById('termDisplay').style.display = 'block';
-  }
+// ═══ 법령 DB ═══
+const lawDB = {
+  '형법 제268조':{title:'형법 제268조',sub:'업무상과실·중과실 치사상',body:'업무상과실(業務上過失) 또는 중대한 과실로 인하여 사람을 사상(死傷)에 이르게 한 자는 5년 이하의 금고 또는 2천만원 이하의 벌금에 처한다.',ref:'형법 · 법무부 소관',target:'형법'},
+  '의료법 제21조':{title:'의료법 제21조',sub:'기록 열람 등',body:'① 환자는 의료인, 의료기관의 장 및 의료기관 종사자에게 본인에 관한 기록의 전부 또는 일부에 대하여 열람 또는 그 사본의 발급 등 내용의 확인을 요청할 수 있다.\n② 의료인이나 의료기관 종사자는 환자가 아닌 다른 사람에게 환자에 관한 기록을 열람하게 하거나 그 사본을 내주는 등 내용을 확인할 수 있게 하여서는 아니 된다.',ref:'의료법 · 보건복지부 소관',target:'의료법'},
+  '민법 제750조':{title:'민법 제750조',sub:'불법행위의 내용',body:'고의 또는 과실로 인한 위법행위로 타인에게 손해를 가한 자는 그 손해를 배상할 책임이 있다.',ref:'민법 · 법무부 소관',target:'민법'},
+};
 
-  // ── 탭 전환 ──
-  function showRightTab(tab) {
-    ['terms','related','summary'].forEach(t => {
-      document.getElementById('tab-'+t).classList.toggle('active', t===tab);
-      document.getElementById('content-'+t).style.display = t===tab ? 'block' : 'none';
-    });
-  }
+// ═══ 검색 Mock DB ═══
+const CASES=[
+  {court:'대법원',num:'2023도14521',date:'2024.03.14',title:'업무상과실치사 — 의료과실 성립 요건',tags:['형법','의료법']},
+  {court:'헌법재판소',num:'2022헌바381',date:'2024.02.28',title:'통신비밀보호법 제5조 위헌 여부',tags:['헌법','형법']},
+  {court:'서울고법',num:'2023나23400',date:'2024.01.19',title:'임대차 보증금 반환 청구',tags:['민법']},
+  {court:'대법원',num:'2018도16002',date:'2019.04.25',title:'의료과실 주의의무 기준',tags:['형법','의료법']},
+  {court:'대법원',num:'2021도8812',date:'2022.07.14',title:'복강경 수술 중 장기 손상 과실',tags:['형법']},
+  {court:'대법원',num:'2019도11307',date:'2020.03.26',title:'수술 전 설명의무 위반',tags:['형법','의료법']},
+  {court:'서울중앙지법',num:'2024가합20045',date:'2024.11.08',title:'의료과오 손해배상 청구',tags:['민법']},
+  {court:'대법원',num:'2022도5500',date:'2023.06.15',title:'무죄추정 원칙 적용 범위',tags:['헌법','형법']},
+];
+const LAWS=[
+  {title:'형법',sub:'법무부 소관',desc:'형사 범죄 성립 요건과 형사 제재를 규정하는 기본 법률.',tags:['형사법']},
+  {title:'민법',sub:'법무부 소관',desc:'사적 법률관계의 일반원칙을 규정하는 기본 법률.',tags:['민사법']},
+  {title:'헌법',sub:'최상위 규범',desc:'국가 조직과 국민 기본권을 규정하는 최상위법.',tags:['헌법']},
+  {title:'형사소송법',sub:'법무부 소관',desc:'형사 사건의 수사·재판·집행 절차를 규정.',tags:['형사법']},
+  {title:'의료법',sub:'보건복지부 소관',desc:'의료인·의료기관의 의무와 의료행위 규범을 규정.',tags:['의료법']},
+  {title:'상법',sub:'법무부 소관',desc:'상인 및 상행위, 회사, 어음, 보험, 해상에 관한 법률.',tags:['상사법']},
+  {title:'근로기준법',sub:'고용노동부 소관',desc:'근로자의 기본적 근로조건을 보호하는 법률.',tags:['노동법']},
+  {title:'저작권법',sub:'문화체육관광부 소관',desc:'저작물과 저작자의 권리를 보호하는 법률.',tags:['지재법']},
+];
 
-  // ── 페이지 전환 ──
-  function goDetail() {
-    document.getElementById('home').classList.remove('active');
-    document.getElementById('detail').classList.add('active');
-    document.getElementById('home').style.display = 'none';
-    document.getElementById('detail').style.display = 'flex';
-    window.scrollTo(0,0);
-  }
-  function goHome() {
-    document.getElementById('detail').classList.remove('active');
-    document.getElementById('home').classList.add('active');
-    document.getElementById('detail').style.display = 'none';
-    document.getElementById('home').style.display = 'block';
-    window.scrollTo(0,0);
-  }
+// ═══ 검색 공통 ═══
+function esc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function tagColor(t){return t==='헌법'?'t헌법':t==='민법'?'t민법':t==='형법'?'t형법':'tlaw';}
 
-  // ── 테마 ──
-  function toggleTheme() {
-    document.body.classList.toggle('light-mode');
-    const isLight = document.body.classList.contains('light-mode');
-    document.getElementById('themeToggleBtn').textContent = isLight ? '◑' : '☀';
-  }
-
-  // ── 뷰어 모드 ──
-  function setMode(mode) {
-    const center = document.getElementById('panelCenter');
-    center.classList.remove('code-mode');
-    ['btnDark','btnLight','btnCode'].forEach(id => document.getElementById(id).classList.remove('active'));
-    if (mode === 'dark') {
-      document.body.classList.remove('light-mode');
-      document.getElementById('btnDark').classList.add('active');
-    } else if (mode === 'light') {
-      document.body.classList.add('light-mode');
-      document.getElementById('btnLight').classList.add('active');
-    } else if (mode === 'code') {
-      document.body.classList.remove('light-mode');
-      center.classList.add('code-mode');
-      document.getElementById('btnCode').classList.add('active');
-    }
-  }
-
-  // ── 폰트 크기 ──
-  function changeFontSize(val) {
-    document.querySelectorAll('.law-text').forEach(el => el.style.fontSize = val + 'px');
-  }
-
-  // ── 용어 강조 토글 ──
-  function toggleHighlight(btn) {
-    btn.classList.toggle('active');
-    const isOn = btn.classList.contains('active');
-    document.querySelectorAll('.term').forEach(el => {
-      el.style.borderBottomColor = isOn ? 'var(--accent)' : 'transparent';
-      el.style.color = isOn ? 'var(--accent)' : 'var(--text)';
-    });
-  }
-
-  // ── 독서 진행률 ──
-  function updateProgress() {
-    const el = document.getElementById('panelCenter');
-    const prog = (el.scrollTop / (el.scrollHeight - el.clientHeight)) * 100;
-    document.getElementById('readingProgress').style.width = prog + '%';
-  }
-
-  // ── TOC 스크롤 ──
-  function scrollToSection(id) {
-    const el = document.getElementById(id);
-    if (el) {
-      document.getElementById('panelCenter').scrollTo({ top: el.offsetTop - 20, behavior: 'smooth' });
-    }
-    document.querySelectorAll('.toc-item').forEach(t => t.classList.remove('active'));
-    event.currentTarget.classList.add('active');
-  }
-
-  // 팝오버 닫기
-  document.addEventListener('click', () => {
-    document.getElementById('termPopover').classList.remove('show');
+function srchAll(q,court,cat,year){
+  const ql=q.toLowerCase().trim();
+  const mc=CASES.filter(c=>{
+    const ok=!ql||c.num.toLowerCase().includes(ql)||c.title.toLowerCase().includes(ql)||c.tags.some(t=>t.includes(ql));
+    return ok&&(!court||c.court.includes(court))&&(!cat||c.tags.includes(cat))&&(!year||c.date.startsWith(year));
   });
+  const ml=LAWS.filter(l=>{
+    return !ql||l.title.includes(ql)||l.desc.includes(ql)||l.tags.some(t=>t.includes(ql)||l.title.toLowerCase().includes(ql));
+  });
+  return {cases:mc,laws:ml};
+}
+function rCase(c,onclick){
+  const tags=c.tags.map(t=>`<span class="ts ${tagColor(t)}">${t}</span>`).join('');
+  return `<div class="ri" onclick="${onclick}"><div class="rc">${c.court} · ${c.num} · ${c.date}</div><div class="rt">${c.title}</div><div class="rtags">${tags}</div></div>`;
+}
+function rLaw(l,onclick){
+  const tags=l.tags.map(t=>`<span class="ts tlaw">${t}</span>`).join('');
+  return `<div class="ri law-ri" onclick="${onclick}"><div class="rc">법령 · ${l.sub}</div><div class="rt">${l.title}</div><div class="rtags">${tags}</div></div>`;
+}
+
+// ═══ 홈 검색 ═══
+let hType='all';
+function hTab(t){hType=t;['all','case','law'].forEach(x=>document.getElementById('ht-'+x).classList.toggle('active',x===t));doHS();}
+function setSrch(q){document.getElementById('hSrch').value=q;doHS();}
+function doHS(){
+  const q=document.getElementById('hSrch').value;
+  const court=document.getElementById('hCourt').value;
+  const cat=document.getElementById('hCat').value;
+  const year=document.getElementById('hYear').value;
+  const {cases,laws}=srchAll(q,court,cat,year);
+  let html='';
+  if(hType!=='law') cases.slice(0,4).forEach(c=>{html+=rCase(c,`goDet('case','${c.num}')`)});
+  if(hType!=='case') laws.slice(0,2).forEach(l=>{html+=rLaw(l,`goDet('law','${l.title}')`)});
+  document.getElementById('hRes').innerHTML=html||'<div class="no-res">검색 결과가 없습니다.</div>';
+}
+
+// ═══ 판례 검색 페이지 ═══
+function doCS(){
+  const q=document.getElementById('cSrch').value;
+  const court=document.getElementById('cCourt').value;
+  const cat=document.getElementById('cCat').value;
+  const {cases}=srchAll(q,court,cat,'');
+  let html='';
+  cases.forEach(c=>{
+    const tags=c.tags.map(t=>`<span class="ts ${tagColor(t)}">${t}</span>`).join('');
+    html+=`<div class="bri" onclick="goDet('case','${c.num}')"><div><div class="bri-court">${c.court}</div><div class="bri-title">${c.title}</div><div class="rtags" style="margin-top:4px;">${tags}<span class="badge badge-c">${c.num}</span></div></div><div style="text-align:right;flex-shrink:0;margin-left:16px;"><div style="font-size:11px;font-family:var(--font-mono);color:var(--text-dim);">${c.date}</div><div class="badge badge-c" style="margin-top:4px;">판례</div></div></div>`;
+  });
+  document.getElementById('cRes').innerHTML=html||'<div class="no-res">검색 결과가 없습니다.</div>';
+}
+
+// ═══ 법령 검색 페이지 ═══
+function doLS(){doLSk(document.getElementById('lSrch').value);}
+function doLSk(kw){
+  document.getElementById('lSrch').value=kw;
+  const {laws}=srchAll(kw,'','','');
+  let html='';
+  laws.forEach(l=>{
+    html+=`<div class="bri" onclick="goDet('law','${l.title}')"><div><div class="bri-court">${l.sub}</div><div class="bri-title">${l.title}</div><div class="rtags" style="margin-top:4px;"><span class="badge badge-l">법령</span></div></div><div><div class="badge badge-l" style="margin-top:4px;">법률</div></div></div>`;
+  });
+  document.getElementById('lRes').innerHTML=html||'<div class="no-res">검색 결과가 없습니다.</div>';
+}
+
+// ═══ 페이지 전환 ═══
+function showOnly(id){
+  ['home','subpage','detail'].forEach(p=>{
+    const el=document.getElementById(p);
+    el.classList.remove('active');
+    el.style.display='none';
+  });
+  const el=document.getElementById(id);
+  el.classList.add('active');
+  el.style.display=id==='detail'?'flex':'block';
+}
+function goHome(){showOnly('home');}
+function goSub(tab){
+  showOnly('subpage');
+  ['cases','laws','guide'].forEach(t=>{
+    document.getElementById('sub-'+t).style.display=t===tab?'block':'none';
+    const n=document.getElementById('sn-'+t);if(n)n.classList.toggle('active',t===tab);
+  });
+  if(tab==='cases') doCS();
+}
+
+// ═══ Detail ═══
+function goDet(type,id){
+  showOnly('detail');
+  clearIS();
+  showTab('terms');
+
+  if(type==='law'){
+    const name=id||'형법';
+    document.getElementById('dNum').textContent='법령 · '+name;
+    document.getElementById('dChip1').textContent='법령';
+    document.getElementById('dChip1').className='chip chip-b';
+    document.getElementById('dChip2').style.display='none';
+    document.getElementById('dCourtBadge').textContent='📄 법령 전문';
+    document.getElementById('dTitle').innerHTML=name+' 전문';
+    document.getElementById('dm1').textContent=name;
+    document.getElementById('dm2').textContent='현행';
+    document.getElementById('dm3').textContent='시행중';
+    document.getElementById('bt1').innerHTML=`<strong>${name}</strong>은(는) 대한민국의 주요 법률입니다.<br><br>※ 실제 서비스에서는 <strong>국가법령정보센터 Open API</strong>를 서버 프록시로 연동하여 모든 조문을 실시간으로 불러올 수 있습니다.`;
+    document.getElementById('bt2').textContent='제1조 (목적) 이 법은 관련 권리·의무 관계를 규정함을 목적으로 한다.';
+    document.getElementById('bt3').textContent='제2조 (정의) 이 법에서 사용하는 용어의 뜻은 다음과 같다.';
+    document.getElementById('bt4').innerHTML=`관련 법령: <span class="law-ref" onclick="openLM('형법 제268조')">형법 제268조</span>`;
+  } else {
+    const num=id||'2023도14521';
+    document.getElementById('dNum').textContent=(num.includes('헌')?'헌법재판소 ':'대법원 ')+num;
+    document.getElementById('dChip1').textContent='형법';
+    document.getElementById('dChip1').className='chip chip-g';
+    document.getElementById('dChip2').style.display='';
+    document.getElementById('dChip2').textContent='의료법';
+    document.getElementById('dCourtBadge').textContent='⚖ 대법원 · 제3부';
+    document.getElementById('dTitle').innerHTML=num+'<br>판결문';
+    document.getElementById('dm1').textContent=num;
+    document.getElementById('dm2').textContent='2024. 03. 14.';
+    document.getElementById('dm3').textContent='파기환송';
+    document.getElementById('bt1').innerHTML='피고인은 서울 소재 ○○병원 외과 전문의로서, 2021. 7. 5. 피해자 甲(당시 58세)에 대하여 복강경 담낭 절제술을 시행하였다. 수술 과정에서 피고인은 총담관을 담낭관으로 오인하여 절제하는 과실을 범하였고, 피해자는 수술 후 패혈증이 발병하여 같은 해 8. 20. 사망하였다.';
+    document.getElementById('bt2').innerHTML='이 사건의 핵심 쟁점은 의료행위에 있어서 주의의무 위반의 인정 기준과, 피고인의 행위와 피해자 사망 간의 인과관계 존부이다. 원심은 피고인이 수술 전 충분한 설명의무를 이행하였고, 수술 과정에서의 오인이 불가항력적이었다고 판단하여 무죄를 선고하였다. 그러나 대법원은 이하와 같이 원심의 판단에 법리오해가 있음을 지적한다.';
+    document.getElementById('bt3').innerHTML='의료행위에 있어서 주의의무의 기준은, 해당 시점의 의학 수준에서 일반적으로 인정되는 의사로서 갖추어야 할 능력과 경험을 갖춘 자가 기울여야 할 주의를 표준으로 삼아야 한다. 기록에 의하면, 피고인은 총담관과 담낭관의 해부학적 위치관계를 조영술로 사전 확인하지 않은 채 수술을 진행하였는바, 이는 당시 의료 수준에 비추어 선관주의의무를 현저히 위반한 것으로 볼 여지가 충분하다. 또한 상당인과관계도 인정되며 업무상과실과 패혈증 사망 간의 연결이 명백하다.';
+    document.getElementById('bt4').innerHTML='나아가 이 사건에는 <span class="law-ref" onclick="openLM(\'형법 제268조\')">형법 제268조</span> 업무상과실치사 규정이 적용되며, <span class="law-ref" onclick="openLM(\'의료법 제21조\')">의료법 제21조</span>에 따른 기록 관리 의무 위반도 병존하는바, <span class="law-ref" onclick="openLM(\'민법 제750조\')">민법 제750조</span>에 기한 손해배상 청구도 가능하다.';
+  }
+
+  // 연계 판례 렌더
+  document.getElementById('relUp').innerHTML=`
+    <div class="rst">상급심 / 선행 판례</div>
+    <div class="rcrd up" onclick="goDet('case','대법원 2018도16002')">
+      <div class="rtype up">▲ 상급심 선행</div>
+      <div class="rtitle">대법원 2018도16002 — 의료과실 주의의무 기준 확립</div>
+      <div class="rmeta">대법원 · 2019.04.25</div>
+    </div>`;
+  document.getElementById('relDn').innerHTML=`
+    <div class="rst">하급심 / 후속 판례</div>
+    <div class="rcrd dn" onclick="goDet('case','서울고법 2024나11200')">
+      <div class="rtype dn">▼ 파기환송심 (진행중)</div>
+      <div class="rtitle">서울고법 2024나11200 — 파기환송 후 재심리</div>
+      <div class="rmeta">서울고법 · 진행중</div>
+    </div>
+    <div class="rcrd dn" onclick="goDet('case','서울중앙지법 2024가합20045')">
+      <div class="rtype dn">▼ 손해배상 청구</div>
+      <div class="rtitle">서울중앙지법 2024가합20045 — 손해배상</div>
+      <div class="rmeta">서울중앙지법 · 2024.11.08</div>
+    </div>`;
+
+  setTimeout(()=>{applyTermHL();buildAutoTerms();},80);
+}
+
+// ═══ 법령 팝업 ═══
+function openLM(key){
+  const d=lawDB[key];if(!d)return;
+  document.getElementById('lmTitle').textContent=d.title;
+  document.getElementById('lmSub').textContent=d.sub;
+  document.getElementById('lmBody').innerHTML=d.body.replace(/\n/g,'<br>');
+  document.getElementById('lmRef').textContent=d.ref;
+  document.getElementById('lmGoBtn').onclick=()=>{document.getElementById('lmOver').classList.remove('show');goDet('law',d.target);};
+  document.getElementById('lmOver').classList.add('show');
+}
+function closeLM(e){if(e.target===document.getElementById('lmOver'))document.getElementById('lmOver').classList.remove('show');}
+
+// ═══ 용어 자동 감지 ═══
+function applyTermHL(){
+  document.querySelectorAll('.lbody').forEach(el=>{
+    let html=el.innerHTML;
+    // 기존 term span 제거
+    html=html.replace(/<span class="term"[^>]*>([^<]+)<\/span>/g,'$1');
+    // law-ref는 유지하면서 텍스트 노드만 대상
+    const sorted=Object.keys(termDB).sort((a,b)=>b.length-a.length);
+    const tmp=document.createElement('div');tmp.innerHTML=html;
+    processNode(tmp,sorted);
+    el.innerHTML=tmp.innerHTML;
+  });
+}
+function processNode(node,words){
+  if(node.nodeType===3){// text node
+    let text=node.textContent;
+    let changed=false;
+    words.forEach(w=>{if(text.includes(w))changed=true;});
+    if(!changed)return;
+    const frag=document.createDocumentFragment();
+    let remaining=text;
+    // 가장 긴 단어부터 replace
+    let positions=[];
+    words.forEach(w=>{
+      let idx=0;
+      while((idx=remaining.indexOf(w,idx))!==-1){
+        positions.push({start:idx,end:idx+w.length,word:w});
+        idx+=w.length;
+      }
+    });
+    // 겹치는 것 제거(앞쪽 우선, 긴 것 우선)
+    positions.sort((a,b)=>a.start-b.start||(b.end-b.start)-(a.end-a.start));
+    const used=[];const merged=[];
+    positions.forEach(p=>{if(!used.some(u=>p.start<u.end&&p.end>u.start)){merged.push(p);used.push(p);}});
+    merged.sort((a,b)=>a.start-b.start);
+    let cur=0;
+    merged.forEach(p=>{
+      if(p.start>cur)frag.appendChild(document.createTextNode(remaining.slice(cur,p.start)));
+      const sp=document.createElement('span');
+      sp.className='term';
+      sp.textContent=p.word;
+      sp.onclick=(()=>{const ww=p.word;return()=>showTermPanel(ww);})();
+      frag.appendChild(sp);
+      cur=p.end;
+    });
+    if(cur<remaining.length)frag.appendChild(document.createTextNode(remaining.slice(cur)));
+    node.parentNode.replaceChild(frag,node);
+  } else if(node.nodeType===1&&!node.classList.contains('term')&&!node.classList.contains('law-ref')&&node.tagName!=='SCRIPT'&&node.tagName!=='STYLE'){
+    Array.from(node.childNodes).forEach(child=>processNode(child,words));
+  }
+}
+
+function buildAutoTerms(){
+  const bodyText=document.getElementById('caseBody').textContent;
+  const found=Object.keys(termDB).filter(w=>bodyText.includes(w));
+  document.getElementById('autoTerms').innerHTML=found.slice(0,9).map(w=>
+    `<div class="tcrd" onclick="showTermPanel('${w}')">
+      <div class="tw">${w}</div>
+      <div class="th">${termDB[w].hanja}</div>
+      <div class="td" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${termDB[w].def.substring(0,48)}...</div>
+    </div>`
+  ).join('');
+  document.getElementById('tCount').textContent=`(${Object.keys(termDB).length}개)`;
+}
+
+function showTermPanel(word){
+  showTab('terms');
+  const d=termDB[word];if(!d)return;
+  document.getElementById('termHint').style.display='none';
+  const el=document.getElementById('termDetail');
+  el.style.display='block';
+  el.innerHTML=`<div class="tcrd" style="border-color:var(--accent);margin-bottom:12px;">
+    <div class="tw" style="font-size:15px;">${word}</div>
+    <div class="th">${d.hanja}</div>
+    <div class="td" style="white-space:pre-line;margin-bottom:6px;">${d.def}</div>
+    <div class="tl2">${d.law}</div>
+  </div>`;
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ═══ 용어 편집 ═══
+function openTE(){renderTeList();document.getElementById('teOver').classList.add('show');}
+function closeTE(e){if(e.target===document.getElementById('teOver'))document.getElementById('teOver').classList.remove('show');}
+function renderTeList(){
+  document.getElementById('tCount').textContent=`(${Object.keys(termDB).length}개)`;
+  document.getElementById('teList').innerHTML=Object.entries(termDB).map(([w,d])=>
+    `<div class="teli"><div style="flex:1;"><div class="teliw">${w} <span style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);">${d.hanja}</span></div><div class="telid">${d.def.substring(0,55)}${d.def.length>55?'...':''}</div></div><button class="tdel" onclick="delTerm('${w}')">삭제</button></div>`
+  ).join('');
+}
+function addTerm(){
+  const w=document.getElementById('nWord').value.trim();
+  const h=document.getElementById('nHanja').value.trim();
+  const df=document.getElementById('nDef').value.trim();
+  const lw=document.getElementById('nLaw').value.trim();
+  if(!w||!df){alert('용어와 정의는 필수입니다.');return;}
+  termDB[w]={hanja:h||'',def:df,law:lw||''};
+  saveTerms();
+  ['nWord','nHanja','nDef','nLaw'].forEach(id=>document.getElementById(id).value='');
+  renderTeList();applyTermHL();buildAutoTerms();
+}
+function delTerm(w){
+  if(!confirm(`"${w}" 용어를 삭제하시겠습니까?`))return;
+  delete termDB[w];saveTerms();renderTeList();applyTermHL();buildAutoTerms();
+}
+
+// ═══ 하이라이트 (사용자 드래그) ═══
+function applyHL(){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed){alert('하이라이트할 텍스트를 드래그로 선택한 후 버튼을 누르세요.');return;}
+  const range=sel.getRangeAt(0);
+  const span=document.createElement('span');
+  span.className='uhl';span.title='클릭하여 제거';
+  span.onclick=function(){this.outerHTML=this.innerHTML;};
+  try{range.surroundContents(span);}catch(e){}
+  sel.removeAllRanges();
+}
+function clearHL(){document.querySelectorAll('.uhl').forEach(el=>{el.outerHTML=el.innerHTML;});}
+
+// ═══ 본문 내 검색 ═══
+let iMatches=[],iIdx=0,iLast='';
+function doIS(){
+  const q=document.getElementById('iSrch').value.trim();
+  if(q===iLast)return;
+  iLast=q;
+  // 이전 하이라이트 제거
+  document.querySelectorAll('.sh').forEach(el=>{el.outerHTML=el.textContent;});
+  iMatches=[];iIdx=0;
+  if(!q){document.getElementById('iCnt').textContent='';return;}
+  const center=document.getElementById('pCenter');
+  const walker=document.createTreeWalker(center,NodeFilter.SHOW_TEXT,{
+    acceptNode:n=>{
+      const p=n.parentElement;
+      if(!p)return NodeFilter.FILTER_REJECT;
+      if(['SCRIPT','STYLE','BUTTON'].includes(p.tagName))return NodeFilter.FILTER_REJECT;
+      if(p.closest('.vtb')||p.closest('.case-hd'))return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+  const ql=q.toLowerCase();
+  nodes.forEach(node=>{
+    const text=node.textContent;
+    const lower=text.toLowerCase();
+    let i=0;
+    while((i=lower.indexOf(ql,i))!==-1){
+      const range=document.createRange();
+      range.setStart(node,i);range.setEnd(node,i+q.length);
+      const sp=document.createElement('span');sp.className='sh';
+      try{range.surroundContents(sp);iMatches.push(sp);}catch(e){}
+      i+=q.length;
+    }
+  });
+  const cnt=document.getElementById('iCnt');
+  cnt.textContent=iMatches.length>0?`1/${iMatches.length}`:'없음';
+  if(iMatches.length>0)hlCur();
+}
+function hlCur(){
+  iMatches.forEach((m,i)=>m.classList.toggle('cur',i===iIdx));
+  if(iMatches[iIdx])iMatches[iIdx].scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('iCnt').textContent=`${iIdx+1}/${iMatches.length}`;
+}
+function nextM(){if(!iMatches.length){doIS();return;}iIdx=(iIdx+1)%iMatches.length;hlCur();}
+function prevM(){if(!iMatches.length)return;iIdx=(iIdx-1+iMatches.length)%iMatches.length;hlCur();}
+function clearIS(){
+  document.getElementById('iSrch').value='';
+  document.getElementById('iCnt').textContent='';
+  document.querySelectorAll('.sh').forEach(el=>{el.outerHTML=el.textContent;});
+  iMatches=[];iIdx=0;iLast='';
+}
+
+// ═══ 뷰어 설정 ═══
+function setMode(m){
+  document.getElementById('pCenter').classList.remove('code-mode');
+  ['bDark','bLight','bCode'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  if(m==='dark'){document.body.classList.remove('light-mode');document.getElementById('bDark').classList.add('active');}
+  else if(m==='light'){document.body.classList.add('light-mode');document.getElementById('bLight').classList.add('active');}
+  else{document.body.classList.remove('light-mode');document.getElementById('pCenter').classList.add('code-mode');document.getElementById('bCode').classList.add('active');}
+}
+function setFS(v){document.querySelectorAll('.lbody').forEach(el=>el.style.fontSize=v+'px');}
+function toggleTheme(){document.body.classList.toggle('light-mode');}
+
+// ═══ 탭 전환 ═══
+function showTab(tab){
+  ['terms','related'].forEach(t=>{
+    document.getElementById('pt-'+t).classList.toggle('active',t===tab);
+    document.getElementById('pc-'+t).style.display=t===tab?'block':'none';
+  });
+}
+
+// ═══ TOC 스크롤 ═══
+function scTo(id,el){
+  const t=document.getElementById(id);
+  if(t)document.getElementById('pCenter').scrollTo({top:t.offsetTop-16,behavior:'smooth'});
+  document.querySelectorAll('.toc').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
+
+// ═══ 독서 진행률 ═══
+function updRP(){
+  const el=document.getElementById('pCenter');
+  const p=(el.scrollTop/(el.scrollHeight-el.clientHeight))*100;
+  document.getElementById('rp').style.width=p+'%';
+}
+
+// ═══ 초기화 ═══
+window.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('subpage').style.display='none';
+  document.getElementById('detail').style.display='none';
+  doHS();doCS();
+});
 </script>
 </body>
 </html>
