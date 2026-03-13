@@ -6,9 +6,9 @@
     <title>좀비 아포칼립스 - 생존일지</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Creepster&family=Special+Elite&display=swap" rel="stylesheet">
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK (App + Realtime Database) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -29,578 +29,126 @@
             --card-bg: #181818;
             --shadow: 0 4px 24px rgba(0,0,0,0.5);
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* ── 배경 텍스처 ── */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(192,57,43,0.03) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 20%, rgba(39,174,96,0.02) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ── 레이아웃 ── */
-        .app-container {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            height: 100vh;
-            gap: 0;
-        }
-
-        /* ── 사이드바 ── */
-        #sidebar {
-            width: 400px;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            gap: 0;
-            border-right: 1px solid var(--panel-border);
-            background: var(--panel);
-            overflow-y: auto;
-        }
-
-        .sidebar-section {
-            padding: 20px;
-            border-bottom: 1px solid var(--panel-border);
-        }
-
+        body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+        body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(192,57,43,0.03) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(39,174,96,0.02) 0%, transparent 50%); pointer-events: none; z-index: 0; }
+        .app-container { position: relative; z-index: 1; display: flex; height: 100vh; gap: 0; }
+        #sidebar { width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0; border-right: 1px solid var(--panel-border); background: var(--panel); overflow-y: auto; }
+        .sidebar-section { padding: 20px; border-bottom: 1px solid var(--panel-border); }
         .sidebar-section:last-child { border-bottom: none; }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .section-header h3 {
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: var(--text-dim);
-        }
-
-        .section-header .icon {
-            width: 28px;
-            height: 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            font-size: 14px;
-            flex-shrink: 0;
-        }
-
+        .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; user-select: none; }
+        .section-header h3 { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+        .section-header .icon { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; font-size: 14px; flex-shrink: 0; }
         .icon-key { background: rgba(192,57,43,0.15); }
         .icon-char { background: rgba(41,128,185,0.15); }
         .icon-save { background: rgba(39,174,96,0.15); }
         .icon-firebase { background: rgba(243,156,18,0.15); }
-
-        /* ── 입력 필드 ── */
-        input, select, textarea {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--input-bg);
-            color: var(--text-bright);
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            font-family: 'Noto Sans KR', sans-serif;
-            font-size: 0.85rem;
-            transition: border-color 0.2s, box-shadow 0.2s;
-            outline: none;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--point);
-            box-shadow: 0 0 0 3px rgba(192,57,43,0.1);
-        }
-
-        input::placeholder, textarea::placeholder {
-            color: #444;
-        }
-
-        .input-row {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 8px;
-        }
-
+        input, select, textarea { width: 100%; padding: 10px 14px; background: var(--input-bg); color: var(--text-bright); border: 1px solid var(--input-border); border-radius: 8px; font-family: 'Noto Sans KR', sans-serif; font-size: 0.85rem; transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--point); box-shadow: 0 0 0 3px rgba(192,57,43,0.1); }
+        input::placeholder, textarea::placeholder { color: #444; }
+        .input-row { display: flex; gap: 8px; margin-bottom: 8px; }
         .input-row input, .input-row select { flex: 1; }
-
         .input-group { margin-bottom: 8px; }
-
         textarea { resize: vertical; min-height: 50px; }
-
-        /* ── 버튼 ── */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 18px;
-            border: none;
-            border-radius: 8px;
-            font-family: 'Noto Sans KR', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            width: 100%;
-        }
-
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 8px; font-family: 'Noto Sans KR', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; width: 100%; }
         .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
         .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-        .btn-primary {
-            background: var(--point);
-            color: white;
-            box-shadow: 0 2px 12px rgba(192,57,43,0.3);
-        }
+        .btn-primary { background: var(--point); color: white; box-shadow: 0 2px 12px rgba(192,57,43,0.3); }
         .btn-primary:hover { background: var(--point-glow); }
-
-        .btn-green {
-            background: var(--accent-green);
-            color: white;
-            box-shadow: 0 2px 12px rgba(39,174,96,0.3);
-        }
+        .btn-green { background: var(--accent-green); color: white; box-shadow: 0 2px 12px rgba(39,174,96,0.3); }
         .btn-green:hover { background: #2ecc71; }
-
-        .btn-blue {
-            background: var(--accent-blue);
-            color: white;
-            box-shadow: 0 2px 12px rgba(41,128,185,0.3);
-        }
+        .btn-blue { background: var(--accent-blue); color: white; box-shadow: 0 2px 12px rgba(41,128,185,0.3); }
         .btn-blue:hover { background: #3498db; }
-
-        .btn-yellow {
-            background: var(--accent-yellow);
-            color: white;
-            box-shadow: 0 2px 12px rgba(243,156,18,0.3);
-        }
+        .btn-yellow { background: var(--accent-yellow); color: white; box-shadow: 0 2px 12px rgba(243,156,18,0.3); }
         .btn-yellow:hover { background: #f1c40f; }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-dim);
-            border: 1px solid var(--input-border);
-        }
+        .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--input-border); }
         .btn-ghost:hover { background: var(--input-bg); color: var(--text); }
-
-        .btn-sm {
-            padding: 5px 10px;
-            font-size: 0.75rem;
-            width: auto;
-        }
-
-        .btn-row {
-            display: flex;
-            gap: 8px;
-        }
-
+        .btn-sm { padding: 5px 10px; font-size: 0.75rem; width: auto; }
+        .btn-row { display: flex; gap: 8px; }
         .btn-row .btn { flex: 1; }
-
-        /* ── 캐릭터 카드 ── */
-        .char-card {
-            background: var(--card-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 10px;
-            padding: 14px;
-            margin-bottom: 8px;
-            position: relative;
-            transition: border-color 0.2s;
-        }
-
+        .char-card { background: var(--card-bg); border: 1px solid var(--panel-border); border-radius: 10px; padding: 14px; margin-bottom: 8px; position: relative; transition: border-color 0.2s; }
         .char-card:hover { border-color: #333; }
-
-        .char-name {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: var(--text-bright);
-            margin-bottom: 4px;
-        }
-
-        .char-meta {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            line-height: 1.6;
-        }
-
-        .char-remove {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #444;
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
+        .char-name { font-weight: 700; font-size: 0.95rem; color: var(--text-bright); margin-bottom: 4px; }
+        .char-meta { font-size: 0.75rem; color: var(--text-dim); line-height: 1.6; }
+        .char-remove { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #444; cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: all 0.2s; }
         .char-remove:hover { color: var(--danger); background: rgba(231,76,60,0.1); }
-
         .char-status-alive { border-left: 3px solid var(--accent-green); }
         .char-status-dead { border-left: 3px solid var(--danger); opacity: 0.5; }
         .char-status-gone { border-left: 3px solid var(--accent-yellow); opacity: 0.7; }
-
-        /* ── 메인 영역 ── */
-        #main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-        }
-
-        /* ── 상단 바 ── */
-        .top-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 28px;
-            border-bottom: 1px solid var(--panel-border);
-            background: var(--panel);
-        }
-
-        .top-bar-title {
-            font-family: 'Creepster', cursive;
-            font-size: 1.6rem;
-            color: var(--point);
-            letter-spacing: 0.05em;
-        }
-
-        .day-badge {
-            font-family: 'Special Elite', cursive;
-            font-size: 1.1rem;
-            color: var(--text-dim);
-            background: var(--input-bg);
-            padding: 6px 16px;
-            border-radius: 20px;
-            border: 1px solid var(--panel-border);
-        }
-
-        /* ── 진행 버튼 ── */
-        .action-bar {
-            padding: 16px 28px;
-            border-bottom: 1px solid var(--panel-border);
-            background: var(--panel);
-        }
-
-        .next-day-btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 1rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
-
-        /* ── 스토리 보드 ── */
-        #story-board {
-            flex: 1;
-            overflow-y: auto;
-            padding: 32px;
-            background: var(--bg);
-        }
-
-        .story-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--text-dim);
-            text-align: center;
-            gap: 12px;
-        }
-
-        .story-empty .empty-icon {
-            font-size: 3rem;
-            opacity: 0.3;
-        }
-
+        #main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 28px; border-bottom: 1px solid var(--panel-border); background: var(--panel); }
+        .top-bar-title { font-family: 'Creepster', cursive; font-size: 1.6rem; color: var(--point); letter-spacing: 0.05em; }
+        .day-badge { font-family: 'Special Elite', cursive; font-size: 1.1rem; color: var(--text-dim); background: var(--input-bg); padding: 6px 16px; border-radius: 20px; border: 1px solid var(--panel-border); }
+        .action-bar { padding: 16px 28px; border-bottom: 1px solid var(--panel-border); background: var(--panel); }
+        .next-day-btn { width: 100%; padding: 16px; font-size: 1rem; font-weight: 700; letter-spacing: 0.02em; }
+        #story-board { flex: 1; overflow-y: auto; padding: 32px; background: var(--bg); }
+        .story-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); text-align: center; gap: 12px; }
+        .story-empty .empty-icon { font-size: 3rem; opacity: 0.3; }
         .story-empty p { font-size: 0.9rem; }
-
-        /* ── 스토리 엔트리 ── */
-        .story-entry {
-            margin-bottom: 40px;
-            animation: fadeIn 0.6s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .day-header {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
-        .day-number {
-            font-family: 'Creepster', cursive;
-            font-size: 2.4rem;
-            color: var(--point);
-            line-height: 1;
-        }
-
-        .day-divider {
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(to right, var(--point-dark), transparent);
-        }
-
-        .story-content {
-            font-size: 0.95rem;
-            line-height: 2;
-            color: var(--text);
-            font-weight: 300;
-        }
-
+        .story-entry { margin-bottom: 40px; animation: fadeIn 0.6s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        .day-header { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+        .day-number { font-family: 'Creepster', cursive; font-size: 2.4rem; color: var(--point); line-height: 1; }
+        .day-divider { flex: 1; height: 1px; background: linear-gradient(to right, var(--point-dark), transparent); }
+        .story-content { font-size: 0.95rem; line-height: 2; color: var(--text); font-weight: 300; }
         .story-content p { margin-bottom: 12px; }
         .story-content strong { color: var(--text-bright); font-weight: 600; }
-
-        /* ── 세이브 슬롯 ── */
-        .save-slot {
-            background: var(--card-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
+        .save-slot { background: var(--card-bg); border: 1px solid var(--panel-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
         .save-slot:hover { border-color: #333; background: #1c1c1c; }
-
-        .save-slot-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 4px;
-        }
-
-        .save-slot-name {
-            font-weight: 600;
-            font-size: 0.85rem;
-            color: var(--text-bright);
-        }
-
-        .save-slot-date {
-            font-size: 0.7rem;
-            color: var(--text-dim);
-        }
-
-        .save-slot-info {
-            font-size: 0.75rem;
-            color: var(--text-dim);
-        }
-
-        .save-slot-actions {
-            display: flex;
-            gap: 6px;
-            margin-top: 8px;
-        }
-
-        /* ── Firebase 설정 ── */
-        .firebase-config-area {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .firebase-status {
-            font-size: 0.75rem;
-            padding: 8px 12px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .firebase-status.connected {
-            background: rgba(39,174,96,0.1);
-            color: var(--accent-green);
-            border: 1px solid rgba(39,174,96,0.2);
-        }
-
-        .firebase-status.disconnected {
-            background: rgba(231,76,60,0.1);
-            color: var(--danger);
-            border: 1px solid rgba(231,76,60,0.2);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            flex-shrink: 0;
-        }
-
+        .save-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .save-slot-name { font-weight: 600; font-size: 0.85rem; color: var(--text-bright); }
+        .save-slot-date { font-size: 0.7rem; color: var(--text-dim); }
+        .save-slot-info { font-size: 0.75rem; color: var(--text-dim); }
+        .save-slot-actions { display: flex; gap: 6px; margin-top: 8px; }
+        .firebase-status { font-size: 0.75rem; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+        .firebase-status.connected { background: rgba(39,174,96,0.1); color: var(--accent-green); border: 1px solid rgba(39,174,96,0.2); }
+        .firebase-status.disconnected { background: rgba(231,76,60,0.1); color: var(--danger); border: 1px solid rgba(231,76,60,0.2); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .status-dot.on { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
         .status-dot.off { background: var(--danger); }
-
-        /* ── 코드 표시 ── */
-        .save-code-display {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .save-code-display input {
-            flex: 1;
-            font-family: 'Special Elite', cursive;
-            font-size: 1rem;
-            letter-spacing: 0.15em;
-            text-align: center;
-            color: var(--accent-yellow);
-            background: var(--input-bg);
-            border: 1px dashed var(--accent-yellow);
-        }
-
-        /* ── 모달 ── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(4px);
-        }
-
+        .save-code-display { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+        .save-code-display input { flex: 1; font-family: 'Special Elite', cursive; font-size: 1rem; letter-spacing: 0.15em; text-align: center; color: var(--accent-yellow); background: var(--input-bg); border: 1px dashed var(--accent-yellow); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
         .modal-overlay.active { display: flex; }
-
-        .modal {
-            background: var(--panel);
-            border: 1px solid var(--panel-border);
-            border-radius: 16px;
-            padding: 32px;
-            width: 460px;
-            max-width: 90vw;
-            box-shadow: var(--shadow);
-        }
-
-        .modal h2 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-bright);
-        }
-
-        .modal p {
-            font-size: 0.85rem;
-            color: var(--text-dim);
-            margin-bottom: 20px;
-            line-height: 1.6;
-        }
-
+        .modal { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 16px; padding: 32px; width: 460px; max-width: 90vw; box-shadow: var(--shadow); }
+        .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; color: var(--text-bright); }
+        .modal p { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 20px; line-height: 1.6; }
         .modal .input-group { margin-bottom: 16px; }
-
-        .modal label {
-            display: block;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-
-        /* ── 스크롤바 ── */
+        .modal label { display: block; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px; font-weight: 500; }
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
-
-        /* ── 상태 메시지 ── */
         .msg { font-size: 0.75rem; margin-top: 6px; }
         .msg-success { color: var(--accent-green); }
         .msg-error { color: var(--danger); }
         .msg-info { color: var(--accent-blue); }
-
-        /* ── 토스트 알림 ── */
-        .toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .toast {
-            background: var(--panel);
-            border: 1px solid var(--panel-border);
-            border-radius: 10px;
-            padding: 14px 20px;
-            font-size: 0.85rem;
-            box-shadow: var(--shadow);
-            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
-            max-width: 360px;
-        }
-
-        @keyframes toastIn {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes toastOut {
-            to { opacity: 0; transform: translateY(8px); }
-        }
-
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { background: var(--panel); border: 1px solid var(--panel-border); border-radius: 10px; padding: 14px 20px; font-size: 0.85rem; box-shadow: var(--shadow); animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards; max-width: 360px; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
         .toast-success { border-left: 3px solid var(--accent-green); }
         .toast-error { border-left: 3px solid var(--danger); }
         .toast-info { border-left: 3px solid var(--accent-blue); }
-
-        /* ── 반응형 ── */
-        @media (max-width: 900px) {
-            .app-container { flex-direction: column; height: auto; }
-            #sidebar { width: 100%; max-height: 50vh; }
-            #story-board { min-height: 60vh; }
-        }
+        @media (max-width: 900px) { .app-container { flex-direction: column; height: auto; } #sidebar { width: 100%; max-height: 50vh; } #story-board { min-height: 60vh; } }
     </style>
 </head>
 <body>
 
 <div class="app-container">
-    <!-- ═══════════ 사이드바 ═══════════ -->
     <div id="sidebar">
-
-        <!-- Firebase 설정 -->
+        <!-- Firebase 상태 -->
         <div class="sidebar-section">
             <div class="section-header">
                 <div class="icon icon-firebase">🔥</div>
                 <h3>Firebase 연결</h3>
             </div>
-            <div class="firebase-config-area">
-                <div id="firebase-status" class="firebase-status disconnected">
-                    <div class="status-dot off"></div>
-                    <span>연결되지 않음</span>
-                </div>
-                <button class="btn btn-yellow btn-sm" onclick="openFirebaseModal()">Firebase 설정</button>
+            <div id="firebase-status" class="firebase-status disconnected">
+                <div class="status-dot off"></div>
+                <span>연결 중...</span>
             </div>
+            <button class="btn btn-yellow btn-sm" onclick="openFirebaseModal()" style="margin-top:8px;">설정 변경</button>
         </div>
 
         <!-- API & 모델 -->
@@ -664,76 +212,62 @@
         </div>
     </div>
 
-    <!-- ═══════════ 메인 ═══════════ -->
     <div id="main">
         <div class="top-bar">
             <div class="top-bar-title">ZOMBIE APOCALYPSE</div>
             <div class="day-badge" id="day-badge">DAY 0</div>
         </div>
-
         <div class="action-bar">
-            <button class="btn btn-primary next-day-btn" onclick="nextDay()" id="run-btn">
-                📅 다음 날로 진행
-            </button>
+            <button class="btn btn-primary next-day-btn" onclick="nextDay()" id="run-btn">📅 다음 날로 진행</button>
         </div>
-
         <div id="story-board">
             <div class="story-empty">
                 <div class="empty-icon">🧟</div>
-                <p>Firebase와 Gemini API가 자동 연결되었습니다.<br>생존자를 추가하고 스토리를 시작하세요.</p>
-                <p style="font-size:0.75rem;">진행 후 저장하면 코드가 발급되어 언제든 이어할 수 있습니다.</p>
+                <p>Firebase 설정과 Gemini API 키를 입력한 뒤<br>생존자를 추가하고 스토리를 시작하세요.</p>
+                <p style="font-size:0.75rem;">한 번 입력하면 브라우저에 기억되어 다음부터 자동 연결됩니다.</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ═══════════ Firebase 설정 모달 ═══════════ -->
+<!-- Firebase 설정 모달 -->
 <div class="modal-overlay" id="firebase-modal">
     <div class="modal">
-        <h2>🔥 Firebase 프로젝트 연결</h2>
-        <p>Firebase Console에서 웹 앱을 생성한 뒤 설정 값을 입력해주세요.<br>
-        무료(Spark) 플랜으로 충분합니다. Firestore Database를 활성화해주세요.</p>
-
+        <h2>🔥 Firebase 설정</h2>
+        <p>Firebase Console → 프로젝트 설정에서 값을 복사해 입력하세요.<br>한 번 입력하면 브라우저에 저장되어 다음부터 자동 연결됩니다.</p>
         <div class="input-group">
             <label>API Key</label>
-            <input type="text" id="fb-apiKey" placeholder="AIza..." value="AIzaSyB3c4q-8QbN9ETCCpV3b2oXCzmrrgOHhcw">
+            <input type="text" id="fb-apiKey" placeholder="AIzaSy...">
         </div>
         <div class="input-group">
-            <label>Auth Domain</label>
-            <input type="text" id="fb-authDomain" placeholder="your-project.firebaseapp.com" value="zombiesimul.firebaseapp.com">
+            <label>Database URL (Realtime Database)</label>
+            <input type="text" id="fb-databaseURL" placeholder="https://your-project-default-rtdb.firebaseio.com">
         </div>
         <div class="input-group">
             <label>Project ID</label>
-            <input type="text" id="fb-projectId" placeholder="your-project-id" value="zombiesimul">
-        </div>
-        <div class="input-group">
-            <label>Storage Bucket (선택)</label>
-            <input type="text" id="fb-storageBucket" placeholder="your-project.appspot.com" value="zombiesimul.firebasestorage.app">
+            <input type="text" id="fb-projectId" placeholder="your-project-id">
         </div>
         <div class="input-group">
             <label>App ID</label>
-            <input type="text" id="fb-appId" placeholder="1:123456:web:abcdef" value="1:779540718411:web:b4363a2dba4840450cbece">
+            <input type="text" id="fb-appId" placeholder="1:123456:web:abcdef">
         </div>
-
         <div class="btn-row" style="margin-top:20px;">
-            <button class="btn btn-yellow" onclick="connectFirebase()">연결</button>
+            <button class="btn btn-yellow" onclick="manualConnect()">연결</button>
             <button class="btn btn-ghost" onclick="closeFirebaseModal()">취소</button>
         </div>
         <p id="fb-msg" class="msg" style="margin-top:10px;"></p>
     </div>
 </div>
 
-<!-- ═══════════ 불러오기 모달 ═══════════ -->
+<!-- 불러오기 모달 -->
 <div class="modal-overlay" id="load-modal">
     <div class="modal">
         <h2>📂 세이브 불러오기</h2>
         <p>저장 코드를 입력하면 이전 진행 상황을 이어갈 수 있습니다.</p>
-
         <div class="input-group">
             <label>저장 코드</label>
             <input type="text" id="load-code-input" placeholder="예: ZA-XXXXXX" style="font-family:'Special Elite',cursive; font-size:1rem; letter-spacing:0.1em; text-align:center;">
         </div>
-
         <div class="btn-row">
             <button class="btn btn-green" onclick="loadGame()">불러오기</button>
             <button class="btn btn-ghost" onclick="closeLoadModal()">취소</button>
@@ -742,17 +276,18 @@
     </div>
 </div>
 
-<!-- ═══════════ 토스트 컨테이너 ═══════════ -->
 <div class="toast-container" id="toast-container"></div>
-
 
 <script>
     // ═══════════ 상태 ═══════════
     let characters = [];
     let day = 0;
-    let storyLog = [];        // 각 DAY별 스토리 HTML 배열
-    let db = null;            // Firestore 인스턴스
+    let storyLog = [];
+    let db = null;
     let currentSaveCode = null;
+
+    // ═══════════ 기본 모델명 ═══════════
+    const DEFAULT_GEMINI_MODEL = "models/gemini-2.5-flash";
 
     // ═══════════ 토스트 ═══════════
     function toast(message, type = 'info') {
@@ -765,151 +300,133 @@
     }
 
     // ═══════════ Firebase 연결 ═══════════
-    function openFirebaseModal() {
-        document.getElementById('firebase-modal').classList.add('active');
-        // 기존 로컬 저장된 설정 복원
-        const saved = localStorage.getItem('fb_config');
-        if (saved) {
-            const cfg = JSON.parse(saved);
-            document.getElementById('fb-apiKey').value = cfg.apiKey || '';
-            document.getElementById('fb-authDomain').value = cfg.authDomain || '';
-            document.getElementById('fb-projectId').value = cfg.projectId || '';
-            document.getElementById('fb-storageBucket').value = cfg.storageBucket || '';
-            document.getElementById('fb-appId').value = cfg.appId || '';
-        }
-    }
-
-    function closeFirebaseModal() {
-        document.getElementById('firebase-modal').classList.remove('active');
-    }
-
-    function connectFirebase() {
-        const config = {
-            apiKey: document.getElementById('fb-apiKey').value.trim(),
-            authDomain: document.getElementById('fb-authDomain').value.trim(),
-            projectId: document.getElementById('fb-projectId').value.trim(),
-            storageBucket: document.getElementById('fb-storageBucket').value.trim(),
-            appId: document.getElementById('fb-appId').value.trim(),
-        };
-
-        if (!config.apiKey || !config.projectId || !config.appId) {
-            document.getElementById('fb-msg').className = 'msg msg-error';
-            document.getElementById('fb-msg').textContent = 'API Key, Project ID, App ID는 필수입니다.';
-            return;
-        }
-
-        try {
-            // 이미 초기화된 앱이 있으면 삭제
-            if (firebase.apps.length) {
-                firebase.apps.forEach(app => app.delete());
-            }
-            const app = firebase.initializeApp(config);
-            db = firebase.firestore();
-
-            // 연결 테스트
-            db.collection('_ping').doc('test').set({ t: Date.now() })
-                .then(() => {
-                    // 설정 로컬 저장
-                    localStorage.setItem('fb_config', JSON.stringify(config));
-                    updateFirebaseStatus(true);
-                    closeFirebaseModal();
-                    toast('Firebase 연결 성공!', 'success');
-                    loadSaveList();
-                })
-                .catch(err => {
-                    document.getElementById('fb-msg').className = 'msg msg-error';
-                    document.getElementById('fb-msg').textContent = 'Firestore 접근 실패: ' + err.message;
-                });
-        } catch (e) {
-            document.getElementById('fb-msg').className = 'msg msg-error';
-            document.getElementById('fb-msg').textContent = '초기화 오류: ' + e.message;
-        }
-    }
-
     function updateFirebaseStatus(connected) {
         const el = document.getElementById('firebase-status');
         if (connected) {
             el.className = 'firebase-status connected';
-            el.innerHTML = '<div class="status-dot on"></div><span>Firestore 연결됨</span>';
+            el.innerHTML = '<div class="status-dot on"></div><span>Realtime Database 연결됨</span>';
         } else {
             el.className = 'firebase-status disconnected';
             el.innerHTML = '<div class="status-dot off"></div><span>연결되지 않음</span>';
         }
     }
 
-    // ═══════════ 기본 설정값 (하드코딩) ═══════════
-    const DEFAULT_FIREBASE_CONFIG = {
-        apiKey: "AIzaSyB3c4q-8QbN9ETCCpV3b2oXCzmrrgOHhcw",
-        authDomain: "zombiesimul.firebaseapp.com",
-        projectId: "zombiesimul",
-        storageBucket: "zombiesimul.firebasestorage.app",
-        messagingSenderId: "779540718411",
-        appId: "1:779540718411:web:b4363a2dba4840450cbece",
-        measurementId: "G-Z3NN5BVPQK"
-    };
-    const DEFAULT_GEMINI_KEY = "AIzaSyCH1uFemCzVNGQBBf1DKikEPKPJaQ0_3V0";
-    const DEFAULT_GEMINI_MODEL = "models/gemini-2.5-flash";
+    function openFirebaseModal() {
+        // localStorage에서 기존 설정 복원
+        const saved = localStorage.getItem('zb_firebase_config');
+        if (saved) {
+            const cfg = JSON.parse(saved);
+            document.getElementById('fb-apiKey').value = cfg.apiKey || '';
+            document.getElementById('fb-databaseURL').value = cfg.databaseURL || '';
+            document.getElementById('fb-projectId').value = cfg.projectId || '';
+            document.getElementById('fb-appId').value = cfg.appId || '';
+        }
+        document.getElementById('firebase-modal').classList.add('active');
+    }
+    function closeFirebaseModal() { document.getElementById('firebase-modal').classList.remove('active'); }
 
-    // 자동 연결 (하드코딩 설정 우선, 없으면 localStorage)
-    (function autoConnect() {
-        const cfg = DEFAULT_FIREBASE_CONFIG;
+    function initFirebase(config) {
         try {
             if (firebase.apps.length) firebase.apps.forEach(app => app.delete());
-            firebase.initializeApp(cfg);
-            db = firebase.firestore();
-            updateFirebaseStatus(true);
-            loadSaveList();
+            firebase.initializeApp(config);
+            db = firebase.database();
+            return true;
         } catch(e) {
-            console.warn('Auto-connect failed:', e);
-            // localStorage fallback
-            const saved = localStorage.getItem('fb_config');
-            if (saved) {
-                try {
-                    const fallback = JSON.parse(saved);
-                    if (fallback.apiKey && fallback.projectId && fallback.appId) {
-                        firebase.initializeApp(fallback);
-                        db = firebase.firestore();
-                        updateFirebaseStatus(true);
-                        loadSaveList();
+            console.warn('Firebase init failed:', e);
+            return false;
+        }
+    }
+
+    function testAndFinalize() {
+        db.ref('_ping').set({ t: Date.now() })
+            .then(() => {
+                updateFirebaseStatus(true);
+                toast('Firebase 연결 성공!', 'success');
+                loadSaveList();
+            })
+            .catch(err => {
+                updateFirebaseStatus(false);
+                toast('DB 연결 실패: ' + err.message, 'error');
+            });
+    }
+
+    function manualConnect() {
+        const config = {
+            apiKey: document.getElementById('fb-apiKey').value.trim(),
+            databaseURL: document.getElementById('fb-databaseURL').value.trim(),
+            projectId: document.getElementById('fb-projectId').value.trim(),
+            appId: document.getElementById('fb-appId').value.trim(),
+        };
+        if (!config.apiKey || !config.databaseURL) {
+            document.getElementById('fb-msg').className = 'msg msg-error';
+            document.getElementById('fb-msg').textContent = 'API Key와 Database URL은 필수입니다.';
+            return;
+        }
+        if (initFirebase(config)) {
+            // localStorage에 저장
+            localStorage.setItem('zb_firebase_config', JSON.stringify(config));
+            testAndFinalize();
+            closeFirebaseModal();
+        } else {
+            document.getElementById('fb-msg').className = 'msg msg-error';
+            document.getElementById('fb-msg').textContent = '초기화 실패';
+        }
+    }
+
+    // ═══════════ 자동 연결 (localStorage에서 복원) ═══════════
+    (function autoConnect() {
+        const saved = localStorage.getItem('zb_firebase_config');
+        if (saved) {
+            try {
+                const cfg = JSON.parse(saved);
+                if (cfg.apiKey && cfg.databaseURL) {
+                    if (initFirebase(cfg)) {
+                        testAndFinalize();
+                        return;
                     }
-                } catch(e2) { console.warn('Fallback failed:', e2); }
-            }
+                }
+            } catch(e) { console.warn('Auto-connect failed:', e); }
+        }
+        // 저장된 설정 없으면 안내
+        updateFirebaseStatus(false);
+    })();
+
+    // ═══════════ Gemini 자동 세팅 (localStorage에서 복원) ═══════════
+    (function autoSetGemini() {
+        const savedKey = localStorage.getItem('zb_gemini_key');
+        const select = document.getElementById('model-select');
+
+        if (savedKey) {
+            document.getElementById('api-key').value = savedKey;
+            select.innerHTML = `<option value="${DEFAULT_GEMINI_MODEL}">Gemini 2.5 Flash (로딩 중...)</option>`;
+            fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${savedKey}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.models) {
+                        const available = data.models.filter(m => m.supportedGenerationMethods.includes('generateContent'));
+                        select.innerHTML = '';
+                        available.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.name;
+                            opt.innerText = m.displayName;
+                            if (m.name === DEFAULT_GEMINI_MODEL || m.name.includes('gemini-2.5-flash')) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                        document.getElementById('status-msg').className = 'msg msg-success';
+                        document.getElementById('status-msg').textContent = `${available.length}개 모델 자동 로드됨`;
+                    }
+                }).catch(() => {
+                    select.innerHTML = `<option value="${DEFAULT_GEMINI_MODEL}">Gemini 2.5 Flash</option>`;
+                });
         }
     })();
 
-    // Gemini API 키 & 모델 자동 세팅
-    (function autoSetGemini() {
-        document.getElementById('api-key').value = DEFAULT_GEMINI_KEY;
-        // 기본 모델을 select에 미리 넣어두기
-        const select = document.getElementById('model-select');
-        select.innerHTML = `<option value="${DEFAULT_GEMINI_MODEL}">Gemini 2.5 Flash</option>`;
-        // 백그라운드에서 전체 모델 목록도 불러오기
-        fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${DEFAULT_GEMINI_KEY}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.models) {
-                    const available = data.models.filter(m =>
-                        m.supportedGenerationMethods.includes('generateContent')
-                    );
-                    select.innerHTML = '';
-                    available.forEach(m => {
-                        const opt = document.createElement('option');
-                        opt.value = m.name;
-                        opt.innerText = m.displayName;
-                        // 기본 모델 선택
-                        if (m.name === DEFAULT_GEMINI_MODEL || m.name.includes('gemini-2.5-flash')) {
-                            opt.selected = true;
-                        }
-                        select.appendChild(opt);
-                    });
-                    document.getElementById('status-msg').className = 'msg msg-success';
-                    document.getElementById('status-msg').textContent = `${available.length}개 모델 자동 로드됨`;
-                }
-            })
-            .catch(() => {}); // 실패해도 기본 모델은 이미 세팅됨
-    })();
+    // Gemini API 키 입력 시 자동 저장
+    document.getElementById('api-key').addEventListener('change', function() {
+        if (this.value.trim()) localStorage.setItem('zb_gemini_key', this.value.trim());
+    });
 
-    // ═══════════ 세이브 코드 생성 ═══════════
+    // ═══════════ 세이브 코드 ═══════════
     function generateSaveCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = 'ZA-';
@@ -917,42 +434,29 @@
         return code;
     }
 
-    // ═══════════ 저장하기 ═══════════
+    // ═══════════ 저장 ═══════════
     async function saveGame() {
         if (!db) { toast('Firebase를 먼저 연결해주세요.', 'error'); return; }
         if (characters.length === 0 && day === 0) { toast('저장할 내용이 없습니다.', 'error'); return; }
-
         const code = currentSaveCode || generateSaveCode();
         currentSaveCode = code;
-
         const saveData = {
-            code: code,
-            characters: characters,
-            day: day,
-            storyLog: storyLog,
+            code, characters, day, storyLog,
             savedAt: new Date().toISOString(),
             charNames: characters.map(c => c.이름).join(', '),
         };
-
         try {
-            await db.collection('saves').doc(code).set(saveData);
-
-            // 코드 표시
+            await db.ref('saves/' + code).set(saveData);
             document.getElementById('save-code-area').style.display = 'block';
             document.getElementById('current-save-code').value = code;
-
             toast(`저장 완료! 코드: ${code}`, 'success');
             loadSaveList();
-        } catch(e) {
-            toast('저장 실패: ' + e.message, 'error');
-        }
+        } catch(e) { toast('저장 실패: ' + e.message, 'error'); }
     }
 
     function copySaveCode() {
-        const input = document.getElementById('current-save-code');
-        navigator.clipboard.writeText(input.value).then(() => {
-            toast('코드가 복사되었습니다!', 'success');
-        });
+        navigator.clipboard.writeText(document.getElementById('current-save-code').value)
+            .then(() => toast('코드가 복사되었습니다!', 'success'));
     }
 
     // ═══════════ 불러오기 ═══════════
@@ -962,236 +466,133 @@
         document.getElementById('load-code-input').value = '';
         document.getElementById('load-msg').textContent = '';
     }
-
-    function closeLoadModal() {
-        document.getElementById('load-modal').classList.remove('active');
-    }
+    function closeLoadModal() { document.getElementById('load-modal').classList.remove('active'); }
 
     async function loadGame() {
         const code = document.getElementById('load-code-input').value.trim().toUpperCase();
         const msgEl = document.getElementById('load-msg');
-
         if (!code) { msgEl.className = 'msg msg-error'; msgEl.textContent = '코드를 입력해주세요.'; return; }
-
         try {
-            const doc = await db.collection('saves').doc(code).get();
-            if (!doc.exists) {
-                msgEl.className = 'msg msg-error';
-                msgEl.textContent = '해당 코드의 세이브를 찾을 수 없습니다.';
-                return;
-            }
-
-            const data = doc.data();
-            characters = data.characters || [];
-            day = data.day || 0;
-            storyLog = data.storyLog || [];
-            currentSaveCode = code;
-
-            // UI 복원
-            renderChars();
-            renderStoryFromLog();
-            document.getElementById('day-badge').textContent = `DAY ${day}`;
-            document.getElementById('save-code-area').style.display = 'block';
-            document.getElementById('current-save-code').value = code;
-
+            const snapshot = await db.ref('saves/' + code).once('value');
+            if (!snapshot.exists()) { msgEl.className = 'msg msg-error'; msgEl.textContent = '해당 코드의 세이브를 찾을 수 없습니다.'; return; }
+            applyLoadedData(snapshot.val(), code);
             closeLoadModal();
             toast(`DAY ${day} 세이브를 불러왔습니다!`, 'success');
-        } catch(e) {
-            msgEl.className = 'msg msg-error';
-            msgEl.textContent = '불러오기 실패: ' + e.message;
-        }
+        } catch(e) { msgEl.className = 'msg msg-error'; msgEl.textContent = '불러오기 실패: ' + e.message; }
     }
 
-    // ═══════════ 세이브 목록 로드 ═══════════
+    function applyLoadedData(data, code) {
+        characters = data.characters || [];
+        day = data.day || 0;
+        storyLog = data.storyLog || [];
+        currentSaveCode = code;
+        renderChars();
+        renderStoryFromLog();
+        document.getElementById('day-badge').textContent = `DAY ${day}`;
+        document.getElementById('save-code-area').style.display = 'block';
+        document.getElementById('current-save-code').value = code;
+    }
+
+    // ═══════════ 세이브 목록 ═══════════
     async function loadSaveList() {
         if (!db) return;
         const listEl = document.getElementById('save-list');
         try {
-            const snapshot = await db.collection('saves')
-                .orderBy('savedAt', 'desc')
-                .limit(5)
-                .get();
-
-            if (snapshot.empty) {
-                listEl.innerHTML = '<p style="font-size:0.75rem;color:#444;">저장된 데이터가 없습니다.</p>';
-                return;
-            }
-
-            listEl.innerHTML = snapshot.docs.map(doc => {
-                const d = doc.data();
-                const date = new Date(d.savedAt).toLocaleString('ko-KR', {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                });
-                return `
-                    <div class="save-slot" onclick="quickLoad('${d.code}')">
-                        <div class="save-slot-header">
-                            <span class="save-slot-name">${d.code}</span>
-                            <span class="save-slot-date">${date}</span>
-                        </div>
-                        <div class="save-slot-info">DAY ${d.day} · ${d.charNames || '캐릭터 없음'}</div>
-                        <div class="save-slot-actions">
-                            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();quickLoad('${d.code}')">불러오기</button>
-                            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteSave('${d.code}')" style="color:var(--danger);">삭제</button>
-                        </div>
-                    </div>
-                `;
+            const snapshot = await db.ref('saves').orderByChild('savedAt').limitToLast(5).once('value');
+            if (!snapshot.exists()) { listEl.innerHTML = '<p style="font-size:0.75rem;color:#444;">저장된 데이터가 없습니다.</p>'; return; }
+            const saves = [];
+            snapshot.forEach(child => saves.push(child.val()));
+            saves.reverse();
+            listEl.innerHTML = saves.map(d => {
+                const date = new Date(d.savedAt).toLocaleString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                return `<div class="save-slot" onclick="quickLoad('${d.code}')">
+                    <div class="save-slot-header"><span class="save-slot-name">${d.code}</span><span class="save-slot-date">${date}</span></div>
+                    <div class="save-slot-info">DAY ${d.day} · ${d.charNames || '캐릭터 없음'}</div>
+                    <div class="save-slot-actions">
+                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();quickLoad('${d.code}')">불러오기</button>
+                        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteSave('${d.code}')" style="color:var(--danger);">삭제</button>
+                    </div></div>`;
             }).join('');
-        } catch(e) {
-            listEl.innerHTML = `<p class="msg msg-error">목록 로드 실패: ${e.message}</p>`;
-        }
+        } catch(e) { listEl.innerHTML = `<p class="msg msg-error">목록 로드 실패: ${e.message}</p>`; }
     }
 
     async function quickLoad(code) {
         if (!db) return;
         try {
-            const doc = await db.collection('saves').doc(code).get();
-            if (!doc.exists) { toast('세이브를 찾을 수 없습니다.', 'error'); return; }
-
-            const data = doc.data();
-            characters = data.characters || [];
-            day = data.day || 0;
-            storyLog = data.storyLog || [];
-            currentSaveCode = code;
-
-            renderChars();
-            renderStoryFromLog();
-            document.getElementById('day-badge').textContent = `DAY ${day}`;
-            document.getElementById('save-code-area').style.display = 'block';
-            document.getElementById('current-save-code').value = code;
+            const snapshot = await db.ref('saves/' + code).once('value');
+            if (!snapshot.exists()) { toast('세이브를 찾을 수 없습니다.', 'error'); return; }
+            applyLoadedData(snapshot.val(), code);
             toast(`DAY ${day} 세이브를 불러왔습니다!`, 'success');
-        } catch(e) {
-            toast('불러오기 실패: ' + e.message, 'error');
-        }
+        } catch(e) { toast('불러오기 실패: ' + e.message, 'error'); }
     }
 
     async function deleteSave(code) {
         if (!confirm(`세이브 [${code}]를 삭제하시겠습니까?`)) return;
         try {
-            await db.collection('saves').doc(code).delete();
-            if (currentSaveCode === code) {
-                currentSaveCode = null;
-                document.getElementById('save-code-area').style.display = 'none';
-            }
+            await db.ref('saves/' + code).remove();
+            if (currentSaveCode === code) { currentSaveCode = null; document.getElementById('save-code-area').style.display = 'none'; }
             toast('삭제되었습니다.', 'info');
             loadSaveList();
-        } catch(e) {
-            toast('삭제 실패: ' + e.message, 'error');
-        }
+        } catch(e) { toast('삭제 실패: ' + e.message, 'error'); }
     }
 
     // ═══════════ 스토리 복원 ═══════════
     function renderStoryFromLog() {
         const board = document.getElementById('story-board');
-        if (storyLog.length === 0) {
-            board.innerHTML = `
-                <div class="story-empty">
-                    <div class="empty-icon">🧟</div>
-                    <p>세이브를 불러왔습니다. 다음 날을 진행하세요.</p>
-                </div>`;
-            return;
-        }
+        if (storyLog.length === 0) { board.innerHTML = `<div class="story-empty"><div class="empty-icon">🧟</div><p>세이브를 불러왔습니다. 다음 날을 진행하세요.</p></div>`; return; }
         board.innerHTML = '';
-        // 최신순으로 보여주기
         for (let i = storyLog.length - 1; i >= 0; i--) {
             const entry = storyLog[i];
             const div = document.createElement('div');
             div.className = 'story-entry';
-            div.innerHTML = `
-                <div class="day-header">
-                    <div class="day-number">DAY ${entry.day}</div>
-                    <div class="day-divider"></div>
-                </div>
-                <div class="story-content">${entry.html}</div>
-            `;
+            div.innerHTML = `<div class="day-header"><div class="day-number">DAY ${entry.day}</div><div class="day-divider"></div></div><div class="story-content">${entry.html}</div>`;
             board.appendChild(div);
         }
     }
 
-    // ═══════════ Gemini API - 모델 확인 ═══════════
+    // ═══════════ Gemini 모델 확인 ═══════════
     async function checkModels() {
         const key = document.getElementById('api-key').value;
         const msg = document.getElementById('status-msg');
         const select = document.getElementById('model-select');
-
         if (!key) return toast('API 키를 먼저 입력하세요!', 'error');
-
-        msg.className = 'msg msg-info';
-        msg.innerText = '모델 목록을 불러오는 중...';
-
+        localStorage.setItem('zb_gemini_key', key);
+        msg.className = 'msg msg-info'; msg.innerText = '모델 목록을 불러오는 중...';
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error.message);
-
             select.innerHTML = '';
-            const available = data.models.filter(m =>
-                m.supportedGenerationMethods.includes('generateContent')
-            );
-
-            available.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.name;
-                opt.innerText = m.displayName;
-                select.appendChild(opt);
+            data.models.filter(m => m.supportedGenerationMethods.includes('generateContent')).forEach(m => {
+                const opt = document.createElement('option'); opt.value = m.name; opt.innerText = m.displayName; select.appendChild(opt);
             });
-
-            msg.className = 'msg msg-success';
-            msg.innerText = `${available.length}개의 모델을 찾았습니다.`;
-        } catch (e) {
-            msg.className = 'msg msg-error';
-            msg.innerText = '오류: ' + e.message;
-        }
+            msg.className = 'msg msg-success'; msg.innerText = `${select.options.length}개의 모델을 찾았습니다.`;
+        } catch (e) { msg.className = 'msg msg-error'; msg.innerText = '오류: ' + e.message; }
     }
 
-    // ═══════════ 캐릭터 관리 ═══════════
+    // ═══════════ 캐릭터 ═══════════
     function addChar() {
         const name = document.getElementById('c-name').value.trim();
         if (!name) return toast('이름을 입력하세요!', 'error');
-
-        const c = {
-            이름: name,
-            나이: document.getElementById('c-age').value.trim(),
-            성별: document.getElementById('c-gender').value.trim(),
-            직업: document.getElementById('c-job').value.trim(),
-            성격: document.getElementById('c-mbti').value.trim(),
-            능력: document.getElementById('c-stats').value.trim(),
-            신념: document.getElementById('c-mind').value.trim(),
-            관계: document.getElementById('c-rel').value.trim(),
-            여담: document.getElementById('c-extra').value.trim(),
-            상태: '생존',
-        };
-
-        characters.push(c);
+        characters.push({
+            이름: name, 나이: document.getElementById('c-age').value.trim(),
+            성별: document.getElementById('c-gender').value.trim(), 직업: document.getElementById('c-job').value.trim(),
+            성격: document.getElementById('c-mbti').value.trim(), 능력: document.getElementById('c-stats').value.trim(),
+            신념: document.getElementById('c-mind').value.trim(), 관계: document.getElementById('c-rel').value.trim(),
+            여담: document.getElementById('c-extra').value.trim(), 상태: '생존',
+        });
         renderChars();
-        // 입력 초기화
-        ['c-name','c-age','c-gender','c-job','c-mbti','c-stats','c-mind','c-rel','c-extra']
-            .forEach(id => document.getElementById(id).value = '');
+        ['c-name','c-age','c-gender','c-job','c-mbti','c-stats','c-mind','c-rel','c-extra'].forEach(id => document.getElementById(id).value = '');
         toast(`${name} 님이 일행에 합류했습니다.`, 'success');
     }
 
     function renderChars() {
         const list = document.getElementById('char-list');
-        if (characters.length === 0) {
-            list.innerHTML = '<p style="font-size:0.75rem;color:#444;">아직 생존자가 없습니다.</p>';
-            return;
-        }
-
+        if (characters.length === 0) { list.innerHTML = '<p style="font-size:0.75rem;color:#444;">아직 생존자가 없습니다.</p>'; return; }
         list.innerHTML = characters.map((c, i) => {
-            const statusClass = c.상태 === '사망' ? 'char-status-dead' :
-                                c.상태 === '이탈' ? 'char-status-gone' : 'char-status-alive';
+            const sc = c.상태 === '사망' ? 'char-status-dead' : c.상태 === '이탈' ? 'char-status-gone' : 'char-status-alive';
             const meta = [c.나이, c.성별, c.직업, c.성격].filter(Boolean).join(' · ');
-            return `
-                <div class="char-card ${statusClass}">
-                    <div class="char-name">${c.이름}</div>
-                    <div class="char-meta">
-                        ${meta ? meta + '<br>' : ''}
-                        ${c.능력 ? '능력: ' + c.능력 + '<br>' : ''}
-                        ${c.신념 ? '신념: ' + c.신념 + '<br>' : ''}
-                        ${c.관계 ? '관계: ' + c.관계 : ''}
-                    </div>
-                    <button class="char-remove" onclick="characters.splice(${i},1);renderChars();" title="제거">✕</button>
-                </div>
-            `;
+            return `<div class="char-card ${sc}"><div class="char-name">${c.이름}</div><div class="char-meta">${meta ? meta+'<br>':''}${c.능력?'능력: '+c.능력+'<br>':''}${c.신념?'신념: '+c.신념+'<br>':''}${c.관계?'관계: '+c.관계:''}</div><button class="char-remove" onclick="characters.splice(${i},1);renderChars();" title="제거">✕</button></div>`;
         }).join('');
     }
 
@@ -1201,96 +602,45 @@
         const model = document.getElementById('model-select').value;
         if (!key || !model) return toast('API 키 입력과 모델 선택을 완료해주세요.', 'error');
         if (characters.length === 0) return toast('생존자가 최소 한 명은 있어야 합니다.', 'error');
-
         const btn = document.getElementById('run-btn');
-        btn.disabled = true;
-        btn.innerText = '⏳ 생존기를 기록하는 중...';
-
+        btn.disabled = true; btn.innerText = '⏳ 생존기를 기록하는 중...';
         day++;
         document.getElementById('day-badge').textContent = `DAY ${day}`;
 
-        // 이전 스토리 요약 (최근 3일)
-        const recentContext = storyLog.slice(-3).map(e =>
-            `[DAY ${e.day} 요약]: ${e.html.replace(/<[^>]*>/g, '').substring(0, 200)}`
-        ).join('\n');
-
-        const prompt = `
-당신은 좀비 아포칼립스 세계관의 정교한 스토리텔러입니다.
-
-[현재 생존자 그룹]: ${JSON.stringify(characters)}
-[현재 날짜]: 생존 ${day}일차
-[이전 이야기 맥락]:
-${recentContext || '(첫째 날입니다.)'}
-
-지시사항:
-1. 위 캐릭터들의 MBTI, 성격, 신념, 관계를 바탕으로 오늘 하루의 일상과 사건을 소설처럼 묘사하세요.
-2. 캐릭터 간의 대화를 포함하고, 각자의 가치관이 드러나게 하세요.
-3. 누군가 다치거나 죽거나, 뜻밖의 행운을 만날 수도 있습니다. (절대적인 안전은 없습니다.)
-4. 외부 캐릭터를 임의로 추가하지 마세요.
-5. 출력은 HTML 형식(<p>, <strong> 등 사용)으로 작성하세요.
-6. 한 번의 응답이 1000자 내외로 유지되게 하세요.
-7. 캐릭터의 스킬을 직접적으로 언급하지 말고, 그 능력에서 비롯된 행동과 분위기로 자연스럽게 드러내세요.
-8. 이전 이야기와 자연스럽게 이어지도록 하세요.
-9. 캐릭터가 사망하거나 이탈한 경우, 응답 맨 끝에 별도 줄로 [상태변경: 이름=사망] 또는 [상태변경: 이름=이탈] 형식으로 표기하세요.
-        `;
+        const recentContext = storyLog.slice(-3).map(e => `[DAY ${e.day} 요약]: ${e.html.replace(/<[^>]*>/g, '').substring(0, 200)}`).join('\n');
+        const prompt = `당신은 좀비 아포칼립스 세계관의 정교한 스토리텔러입니다.\n\n[현재 생존자 그룹]: ${JSON.stringify(characters)}\n[현재 날짜]: 생존 ${day}일차\n[이전 이야기 맥락]:\n${recentContext || '(첫째 날입니다.)'}\n\n지시사항:\n1. 위 캐릭터들의 MBTI, 성격, 신념, 관계를 바탕으로 오늘 하루의 일상과 사건을 소설처럼 묘사하세요.\n2. 캐릭터 간의 대화를 포함하고, 각자의 가치관이 드러나게 하세요.\n3. 누군가 다치거나 죽거나, 뜻밖의 행운을 만날 수도 있습니다. (절대적인 안전은 없습니다.)\n4. 외부 캐릭터를 임의로 추가하지 마세요.\n5. 출력은 HTML 형식(<p>, <strong> 등 사용)으로 작성하세요.\n6. 한 번의 응답이 1000자 내외로 유지되게 하세요.\n7. 캐릭터의 스킬을 직접적으로 언급하지 말고, 그 능력에서 비롯된 행동과 분위기로 자연스럽게 드러내세요.\n8. 이전 이야기와 자연스럽게 이어지도록 하세요.\n9. 캐릭터가 사망하거나 이탈한 경우, 응답 맨 끝에 별도 줄로 [상태변경: 이름=사망] 또는 [상태변경: 이름=이탈] 형식으로 표기하세요.`;
 
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${key}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
-
             const data = await res.json();
             if (data.error) throw new Error(data.error.message);
-
-            let story = data.candidates[0].content.parts[0].text;
-            story = story.replace(/```html|```/g, '');
+            let story = data.candidates[0].content.parts[0].text.replace(/```html|```/g, '');
 
             // 상태 변경 파싱
             const statusRegex = /\[상태변경:\s*(.+?)=(.+?)\]/g;
             let match;
             while ((match = statusRegex.exec(story)) !== null) {
-                const charName = match[1].trim();
-                const newStatus = match[2].trim();
-                const char = characters.find(c => c.이름 === charName);
-                if (char) char.상태 = newStatus;
+                const char = characters.find(c => c.이름 === match[1].trim());
+                if (char) char.상태 = match[2].trim();
             }
-            // 상태 변경 태그 제거
             story = story.replace(/\[상태변경:[^\]]+\]/g, '');
 
-            // 스토리 로그에 추가
-            storyLog.push({ day: day, html: story });
-
-            // 화면에 렌더링
+            storyLog.push({ day, html: story });
             const board = document.getElementById('story-board');
             if (day === 1 || board.querySelector('.story-empty')) board.innerHTML = '';
-
             const entry = document.createElement('div');
             entry.className = 'story-entry';
-            entry.innerHTML = `
-                <div class="day-header">
-                    <div class="day-number">DAY ${day}</div>
-                    <div class="day-divider"></div>
-                </div>
-                <div class="story-content">${story}</div>
-            `;
+            entry.innerHTML = `<div class="day-header"><div class="day-number">DAY ${day}</div><div class="day-divider"></div></div><div class="story-content">${story}</div>`;
             board.prepend(entry);
-
             renderChars();
-
-            // 자동 저장 (Firebase 연결 시)
-            if (db && currentSaveCode) {
-                saveGame();
-            }
+            if (db && currentSaveCode) saveGame();
         } catch (e) {
             toast('스토리 생성 실패: ' + e.message, 'error');
-            day--;
-            document.getElementById('day-badge').textContent = `DAY ${day}`;
-        } finally {
-            btn.disabled = false;
-            btn.innerText = '📅 다음 날로 진행';
-        }
+            day--; document.getElementById('day-badge').textContent = `DAY ${day}`;
+        } finally { btn.disabled = false; btn.innerText = '📅 다음 날로 진행'; }
     }
 </script>
 </body>
