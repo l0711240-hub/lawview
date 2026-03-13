@@ -34,11 +34,14 @@
     <div class="panel" style="flex-grow: 1;">
         <h3>👥 2. 캐릭터 설정</h3>
         <input type="text" id="c-name" placeholder="이름">
-        <input type="text" id="c-job" placeholder="나이/직업">
+        <input type="text" id="c-age" placeholder="나이">
+        <input type="text" id="c-job" placeholder="직업">
+        <input type="text" id="c-gender" placeholder="성별">
         <input type="text" id="c-mbti" placeholder="성격/MBTI">
         <input type="text" id="c-stats" placeholder="능력/스킬">
         <textarea id="c-mind" rows="2" placeholder="신념 및 가치관"></textarea>
-        <textarea id="c-rel" rows="2" placeholder="관계/특이점/여담"></textarea>
+        <input type="text" id="c-rel" placeholder="관계">
+        <textarea id="c-extra" rows="2" placeholder="특이점/여담"></textarea>
         <button onclick="addChar()" style="background: #1e90ff;">일행에 합류시키기</button>
         <div id="char-list" style="margin-top: 15px;"></div>
     </div>
@@ -76,7 +79,7 @@
             
             availableModels.forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = m.name; // 예: models/gemini-1.5-flash
+                opt.value = m.name; // 예: models/gemini-2.5-flash
                 opt.innerText = m.displayName;
                 select.appendChild(opt);
             });
@@ -96,11 +99,14 @@
         
         const c = {
             이름: name,
-            정보: document.getElementById('c-job').value,
+            나이: document.getElementById('c-age').value,
+            성별: document.getElementById('c-gender').value
+            직업: document.getElementById('c-job').value,
             성격: document.getElementById('c-mbti').value,
             능력: document.getElementById('c-stats').value,
             신념: document.getElementById('c-mind').value,
             관계: document.getElementById('c-rel').value
+            여담: document.getElementById('c-extra').value
         };
         characters.push(c);
         renderChars();
@@ -177,3 +183,4 @@
 </body>
 
 </html>
+
