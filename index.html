@@ -423,15 +423,6 @@
         }
 
         /* ── Firebase 설정 ── */
-        const firebaseConfig = {
-          apiKey: "AIzaSyB3c4q-8QbN9ETCCpV3b2oXCzmrrgOHhcw",
-          authDomain: "zombiesimul.firebaseapp.com",
-          projectId: "zombiesimul",
-          storageBucket: "zombiesimul.firebasestorage.app",
-          messagingSenderId: "779540718411",
-          appId: "1:779540718411:web:b4363a2dba4840450cbece",
-          measurementId: "G-Z3NN5BVPQK"
-        };
         .firebase-config-area {
             display: flex;
             flex-direction: column;
@@ -689,8 +680,8 @@
         <div id="story-board">
             <div class="story-empty">
                 <div class="empty-icon">🧟</div>
-                <p>API 키를 입력하고 모델을 확인한 뒤<br>생존자를 추가하고 스토리를 시작하세요.</p>
-                <p style="font-size:0.75rem;">Firebase를 연결하면 진행 상황을 저장할 수 있습니다.</p>
+                <p>Firebase와 Gemini API가 자동 연결되었습니다.<br>생존자를 추가하고 스토리를 시작하세요.</p>
+                <p style="font-size:0.75rem;">진행 후 저장하면 코드가 발급되어 언제든 이어할 수 있습니다.</p>
             </div>
         </div>
     </div>
@@ -705,23 +696,23 @@
 
         <div class="input-group">
             <label>API Key</label>
-            <input type="text" id="fb-apiKey" placeholder="AIza...">
+            <input type="text" id="fb-apiKey" placeholder="AIza..." value="AIzaSyB3c4q-8QbN9ETCCpV3b2oXCzmrrgOHhcw">
         </div>
         <div class="input-group">
             <label>Auth Domain</label>
-            <input type="text" id="fb-authDomain" placeholder="your-project.firebaseapp.com">
+            <input type="text" id="fb-authDomain" placeholder="your-project.firebaseapp.com" value="zombiesimul.firebaseapp.com">
         </div>
         <div class="input-group">
             <label>Project ID</label>
-            <input type="text" id="fb-projectId" placeholder="your-project-id">
+            <input type="text" id="fb-projectId" placeholder="your-project-id" value="zombiesimul">
         </div>
         <div class="input-group">
             <label>Storage Bucket (선택)</label>
-            <input type="text" id="fb-storageBucket" placeholder="your-project.appspot.com">
+            <input type="text" id="fb-storageBucket" placeholder="your-project.appspot.com" value="zombiesimul.firebasestorage.app">
         </div>
         <div class="input-group">
             <label>App ID</label>
-            <input type="text" id="fb-appId" placeholder="1:123456:web:abcdef">
+            <input type="text" id="fb-appId" placeholder="1:123456:web:abcdef" value="1:779540718411:web:b4363a2dba4840450cbece">
         </div>
 
         <div class="btn-row" style="margin-top:20px;">
@@ -846,20 +837,76 @@
         }
     }
 
-    // 자동 연결 시도 (이전 설정 있으면)
+    // ═══════════ 기본 설정값 (하드코딩) ═══════════
+    const DEFAULT_FIREBASE_CONFIG = {
+        apiKey: "AIzaSyB3c4q-8QbN9ETCCpV3b2oXCzmrrgOHhcw",
+        authDomain: "zombiesimul.firebaseapp.com",
+        projectId: "zombiesimul",
+        storageBucket: "zombiesimul.firebasestorage.app",
+        messagingSenderId: "779540718411",
+        appId: "1:779540718411:web:b4363a2dba4840450cbece",
+        measurementId: "G-Z3NN5BVPQK"
+    };
+    const DEFAULT_GEMINI_KEY = "AIzaSyCH1uFemCzVNGQBBf1DKikEPKPJaQ0_3V0";
+    const DEFAULT_GEMINI_MODEL = "models/gemini-2.5-flash";
+
+    // 자동 연결 (하드코딩 설정 우선, 없으면 localStorage)
     (function autoConnect() {
-        const saved = localStorage.getItem('fb_config');
-        if (saved) {
-            try {
-                const cfg = JSON.parse(saved);
-                if (cfg.apiKey && cfg.projectId && cfg.appId) {
-                    const app = firebase.initializeApp(cfg);
-                    db = firebase.firestore();
-                    updateFirebaseStatus(true);
-                    loadSaveList();
-                }
-            } catch(e) { console.warn('Auto-connect failed:', e); }
+        const cfg = DEFAULT_FIREBASE_CONFIG;
+        try {
+            if (firebase.apps.length) firebase.apps.forEach(app => app.delete());
+            firebase.initializeApp(cfg);
+            db = firebase.firestore();
+            updateFirebaseStatus(true);
+            loadSaveList();
+        } catch(e) {
+            console.warn('Auto-connect failed:', e);
+            // localStorage fallback
+            const saved = localStorage.getItem('fb_config');
+            if (saved) {
+                try {
+                    const fallback = JSON.parse(saved);
+                    if (fallback.apiKey && fallback.projectId && fallback.appId) {
+                        firebase.initializeApp(fallback);
+                        db = firebase.firestore();
+                        updateFirebaseStatus(true);
+                        loadSaveList();
+                    }
+                } catch(e2) { console.warn('Fallback failed:', e2); }
+            }
         }
+    })();
+
+    // Gemini API 키 & 모델 자동 세팅
+    (function autoSetGemini() {
+        document.getElementById('api-key').value = DEFAULT_GEMINI_KEY;
+        // 기본 모델을 select에 미리 넣어두기
+        const select = document.getElementById('model-select');
+        select.innerHTML = `<option value="${DEFAULT_GEMINI_MODEL}">Gemini 2.5 Flash</option>`;
+        // 백그라운드에서 전체 모델 목록도 불러오기
+        fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${DEFAULT_GEMINI_KEY}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.models) {
+                    const available = data.models.filter(m =>
+                        m.supportedGenerationMethods.includes('generateContent')
+                    );
+                    select.innerHTML = '';
+                    available.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m.name;
+                        opt.innerText = m.displayName;
+                        // 기본 모델 선택
+                        if (m.name === DEFAULT_GEMINI_MODEL || m.name.includes('gemini-2.5-flash')) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+                    document.getElementById('status-msg').className = 'msg msg-success';
+                    document.getElementById('status-msg').textContent = `${available.length}개 모델 자동 로드됨`;
+                }
+            })
+            .catch(() => {}); // 실패해도 기본 모델은 이미 세팅됨
     })();
 
     // ═══════════ 세이브 코드 생성 ═══════════
