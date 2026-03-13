@@ -215,16 +215,32 @@
     <div id="main">
         <div class="top-bar">
             <div class="top-bar-title">ZOMBIE APOCALYPSE</div>
-            <div class="day-badge" id="day-badge">DAY 0</div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button class="btn btn-ghost btn-sm" onclick="toggleInventory()" id="inv-toggle-btn" style="width:auto;">📦 물자현황</button>
+                <div class="day-badge" id="day-badge">DAY 0</div>
+            </div>
         </div>
         <div class="action-bar">
             <button class="btn btn-primary next-day-btn" onclick="nextDay()" id="run-btn">📅 다음 날로 진행</button>
         </div>
-        <div id="story-board">
-            <div class="story-empty">
-                <div class="empty-icon">🧟</div>
-                <p>Firebase 설정과 Gemini API 키를 입력한 뒤<br>생존자를 추가하고 스토리를 시작하세요.</p>
-                <p style="font-size:0.75rem;">한 번 입력하면 브라우저에 기억되어 다음부터 자동 연결됩니다.</p>
+        <div style="display:flex;flex:1;overflow:hidden;">
+            <div id="story-board" style="flex:1;overflow-y:auto;padding:32px;">
+                <div class="story-empty">
+                    <div class="empty-icon">🧟</div>
+                    <p>Firebase 설정과 Gemini API 키를 입력한 뒤<br>생존자를 추가하고 스토리를 시작하세요.</p>
+                    <p style="font-size:0.75rem;">한 번 입력하면 브라우저에 기억되어 다음부터 자동 연결됩니다.</p>
+                </div>
+            </div>
+            <!-- 물자 현황 패널 -->
+            <div id="inventory-panel" style="width:260px;border-left:1px solid var(--panel-border);background:var(--panel);overflow-y:auto;display:none;flex-shrink:0;">
+                <div style="padding:16px;">
+                    <h3 style="font-size:0.8rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;">📦 보유 물자</h3>
+                    <div id="inventory-list"></div>
+                    <h3 style="font-size:0.8rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin:18px 0 14px;">🤝 관계 현황</h3>
+                    <div id="relationship-list"></div>
+                    <h3 style="font-size:0.8rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin:18px 0 14px;">🧠 멘탈 상태</h3>
+                    <div id="mental-list"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -285,6 +301,13 @@
     let storyLog = [];
     let db = null;
     let currentSaveCode = null;
+
+    // ═══════════ 물자/관계/멘탈 시스템 ═══════════
+    let inventory = {
+        식량: 3, 물: 3, 의약품: 1, 무기: 0, 도구: 0, 기타: 0
+    };
+    let relationships = {}; // "이름1-이름2": { level: 0~100, desc: "..." }
+    let mentalStates = {}; // "이름": { state: "안정/불안/예민/분노/무기력/...", stress: 0~100 }
 
     // ═══════════ 기본 모델명 ═══════════
     const DEFAULT_GEMINI_MODEL = "models/gemini-2.5-flash";
@@ -442,6 +465,7 @@
         currentSaveCode = code;
         const saveData = {
             code, characters, day, storyLog,
+            inventory, relationships, mentalStates,
             savedAt: new Date().toISOString(),
             charNames: characters.map(c => c.이름).join(', '),
         };
@@ -485,9 +509,13 @@
         characters = data.characters || [];
         day = data.day || 0;
         storyLog = data.storyLog || [];
+        inventory = data.inventory || { 식량: 3, 물: 3, 의약품: 1, 무기: 0, 도구: 0, 기타: 0 };
+        relationships = data.relationships || {};
+        mentalStates = data.mentalStates || {};
         currentSaveCode = code;
         renderChars();
         renderStoryFromLog();
+        renderInventory();
         document.getElementById('day-badge').textContent = `DAY ${day}`;
         document.getElementById('save-code-area').style.display = 'block';
         document.getElementById('current-save-code').value = code;
@@ -596,37 +624,124 @@
         }).join('');
     }
 
-    // ═══════════ 이벤트 랜덤 시스템 ═══════════
-    const EVENT_POOL = [
-        // 긍정적 이벤트
-        "물자가 가득한 버려진 창고를 발견한다",
-        "깨끗한 수원지(우물/정수기/빗물 저장소)를 찾는다",
-        "안전한 은신처(지하벙커/옥상/폐공장)를 새로 확보한다",
-        "오랜만에 모닥불을 피우고 여유로운 밤을 보낸다",
-        "술이나 간식거리를 발견해 작은 파티를 벌인다",
-        "작동하는 라디오에서 다른 생존자 집단의 교신을 수신한다",
-        "쓸만한 무기나 도구(공구세트/의약품/발전기)를 획득한다",
-        "좀비가 거의 없는 평화로운 구역을 발견한다",
-        "버려진 차량 한 대가 아직 시동이 걸린다",
-        "맑은 날씨, 일행이 서로의 과거 이야기를 나눈다",
-        // 부정적 이벤트
-        "은신처가 좀비 무리에 발각되어 긴급 대피한다",
-        "일행 중 누군가 부상을 입는다(골절/찰과상/감염 의심)",
-        "비축해둔 식량이 상해서 버려야 한다",
-        "폭우/폭설이 내려 이동이 불가능하다",
-        "일행 사이에 의견 충돌이 격화된다",
-        "밤중에 정체불명의 소리를 듣고 잠을 설친다",
-        "다른 생존자 집단과 영역 분쟁이 생긴다",
-        // 중립/드라마 이벤트
-        "누군가의 생일이거나 기념일을 기억해낸다",
-        "꿈이나 환상을 통해 과거의 기억이 떠오른다",
-        "일행 중 두 명의 관계에 변화가 생긴다(더 친해지거나 멀어지거나)",
-        "가족 사진이나 편지 같은 유품을 발견한다",
-        "일상적인 행위(요리/세탁/수리)를 하며 소소한 대화를 나눈다",
-        "높은 곳에 올라가 도시의 전경을 바라보며 생각에 잠긴다",
-        "동물(개/고양이/새)을 만난다",
-        "일행이 앞으로의 계획에 대해 진지하게 논의한다",
-    ];
+    // ═══════════ 물자/관계/멘탈 UI ═══════════
+    function toggleInventory() {
+        const panel = document.getElementById('inventory-panel');
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        renderInventory();
+    }
+
+    function renderInventory() {
+        // 물자
+        const invEl = document.getElementById('inventory-list');
+        const icons = { 식량: '🍖', 물: '💧', 의약품: '💊', 무기: '🔪', 도구: '🔧', 기타: '📦' };
+        const colors = { 식량: '#e67e22', 물: '#3498db', 의약품: '#2ecc71', 무기: '#e74c3c', 도구: '#95a5a6', 기타: '#9b59b6' };
+        invEl.innerHTML = Object.entries(inventory).map(([k, v]) => {
+            const pct = Math.min(v * 10, 100);
+            return `<div style="margin-bottom:10px;">
+                <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:3px;">
+                    <span>${icons[k] || ''} ${k}</span><span style="color:${v <= 1 ? 'var(--danger)' : 'var(--text-dim)'}">${v}일분</span>
+                </div>
+                <div style="height:4px;background:#222;border-radius:2px;overflow:hidden;">
+                    <div style="height:100%;width:${pct}%;background:${colors[k] || '#666'};border-radius:2px;transition:width 0.3s;"></div>
+                </div>
+            </div>`;
+        }).join('');
+
+        // 관계
+        const relEl = document.getElementById('relationship-list');
+        const relEntries = Object.entries(relationships);
+        if (relEntries.length === 0) {
+            relEl.innerHTML = '<p style="font-size:0.7rem;color:#444;">아직 기록 없음</p>';
+        } else {
+            relEl.innerHTML = relEntries.map(([pair, r]) => {
+                const color = r.level > 60 ? 'var(--accent-green)' : r.level > 30 ? 'var(--accent-yellow)' : 'var(--danger)';
+                return `<div style="margin-bottom:8px;font-size:0.75rem;">
+                    <div style="display:flex;justify-content:space-between;"><span>${pair.replace('-',' ↔ ')}</span><span style="color:${color}">${r.level}</span></div>
+                    <div style="font-size:0.65rem;color:var(--text-dim);margin-top:2px;">${r.desc || ''}</div>
+                </div>`;
+            }).join('');
+        }
+
+        // 멘탈
+        const menEl = document.getElementById('mental-list');
+        const menEntries = Object.entries(mentalStates);
+        if (menEntries.length === 0) {
+            menEl.innerHTML = '<p style="font-size:0.7rem;color:#444;">아직 기록 없음</p>';
+        } else {
+            menEl.innerHTML = menEntries.map(([name, m]) => {
+                const stressColor = m.stress > 70 ? 'var(--danger)' : m.stress > 40 ? 'var(--accent-yellow)' : 'var(--accent-green)';
+                return `<div style="margin-bottom:8px;font-size:0.75rem;">
+                    <div style="display:flex;justify-content:space-between;"><span>${name}</span><span style="color:${stressColor}">${m.state} (스트레스 ${m.stress})</span></div>
+                </div>`;
+            }).join('');
+        }
+    }
+
+    // ═══════════ 이벤트 랜덤 시스템 (확장) ═══════════
+    const EVENT_POOL = {
+        환경위협: [
+            "폭우가 쏟아져 은신처에 물이 차오른다",
+            "밤사이 기온이 급격히 떨어져 동사 위험이 생긴다",
+            "근처 건물이 무너지면서 이동 경로가 차단된다",
+            "짙은 안개가 끼어 시야가 극도로 제한된다",
+            "지진의 여파로 도로에 균열이 생긴다",
+            "산불 또는 화재의 연기가 지역을 뒤덮는다",
+        ],
+        물자: [
+            "식량이 바닥나 새로운 보급처를 찾아야 한다",
+            "깨끗한 물을 구할 수 있는 정수 시설을 발견한다",
+            "버려진 약국에서 의약품을 대량 확보한다",
+            "군용 보급 트럭이 전복된 채 발견된다",
+            "텃밭이나 비닐하우스에서 신선한 채소를 발견한다",
+            "음식을 배분하는 과정에서 불만이 터진다",
+        ],
+        타생존자: [
+            "무장한 다른 생존자 집단과 마주친다",
+            "혼자 떠도는 아이를 발견한다",
+            "다른 집단이 물자를 대가로 거래를 제안한다",
+            "이전에 알던 사람을 우연히 다시 만난다",
+            "적대적인 생존자에게 매복을 당한다",
+            "도움을 구하는 무전을 수신한다",
+            "다른 집단에서 추방당한 사람이 합류를 요청한다",
+        ],
+        좀비변이: [
+            "평소보다 빠르게 움직이는 돌연변이를 목격한다",
+            "소리에 반응하지 않는 새로운 유형을 발견한다",
+            "좀비의 행동 패턴이 변한 것 같다는 의심이 든다",
+            "감염자가 완전히 변하기 전의 중간 단계를 목격한다",
+        ],
+        관계감정: [
+            "극한 상황에서 누군가를 구해준 뒤 감정이 복잡해진다",
+            "생존 방식을 두고 일행 내 의견이 갈린다 (정면돌파 vs 우회)",
+            "연인 사이에 제3자로 인한 미묘한 감정 변화가 생긴다",
+            "누군가의 과거 비밀이 드러나면서 신뢰에 금이 간다",
+            "죽음의 공포 앞에서 평소 숨기던 감정을 고백한다",
+            "장기간의 스트레스로 누군가의 멘탈이 한계에 다다른다",
+            "서로 다른 성격의 두 사람이 예상 밖의 유대감을 형성한다",
+            "리더십을 두고 암묵적인 권력 다툼이 생긴다",
+            "누군가가 집단을 떠나겠다고 선언한다",
+        ],
+        평화일상: [
+            "안전한 곳에서 모닥불을 피우고 술을 나눠 마신다",
+            "오랜만에 제대로 된 식사를 만들어 먹는다",
+            "각자의 과거 이야기를 나누며 밤을 지새운다",
+            "누군가의 생일을 기억하고 소박하게 축하한다",
+            "맑은 하늘 아래 옥상에서 도시 풍경을 바라본다",
+            "음악이 재생되는 장치를 발견하고 함께 듣는다",
+            "길 잃은 동물(개/고양이)이 일행을 따라온다",
+            "빗소리를 들으며 각자 생각에 잠긴다",
+            "비가 그치고 무지개가 떠서 잠시 경이로움을 느낀다",
+        ],
+        발견탐험: [
+            "지하 벙커의 입구를 발견한다",
+            "작동하는 차량을 발견하지만 연료가 부족하다",
+            "라디오에서 군의 안전지대 좌표가 수신된다",
+            "도서관이나 서점에서 유용한 서바이벌 정보를 찾는다",
+            "높은 곳에서 관측하니 멀리서 연기(다른 생존자의 신호)가 보인다",
+            "지도를 발견하고 다음 목적지를 논의한다",
+        ],
+    };
 
     const TONE_POOL = [
         "고요하고 서정적인 분위기. 액션 없이 캐릭터 내면과 관계에 집중.",
@@ -635,11 +750,23 @@
         "쓸쓸하고 회고적인 분위기. 잃어버린 것들에 대한 그리움.",
         "희망적이고 따뜻한 분위기. 작은 행복을 발견하는 순간.",
         "불안하고 미스터리한 분위기. 무언가 잘못되었다는 느낌.",
+        "감정적으로 격렬한 분위기. 인물 간 갈등과 감정 폭발.",
+        "조용한 긴장감. 표면은 평화로우나 속에 불안이 도사린다.",
     ];
 
     function pickRandom(arr, count = 1) {
         const shuffled = [...arr].sort(() => Math.random() - 0.5);
         return shuffled.slice(0, count);
+    }
+
+    function pickEvents() {
+        // 서로 다른 카테고리에서 2~3개 뽑기
+        const categories = Object.keys(EVENT_POOL);
+        const picked = pickRandom(categories, 3);
+        return picked.map(cat => {
+            const events = EVENT_POOL[cat];
+            return pickRandom(events, 1)[0];
+        });
     }
 
     // ═══════════ 스토리 진행 ═══════════
@@ -653,16 +780,14 @@
         day++;
         document.getElementById('day-badge').textContent = `DAY ${day}`;
 
-        // 이전 맥락 (최근 3일, 요약 길이 늘림)
         const recentContext = storyLog.slice(-3).map(e =>
-            `[DAY ${e.day}]: ${e.html.replace(/<[^>]*>/g, '').substring(0, 300)}`
+            `[DAY ${e.day}]: ${e.html.replace(/<[^>]*>/g, '').substring(0, 350)}`
         ).join('\n');
 
-        // 랜덤 이벤트 & 톤 선택
-        const todayEvents = pickRandom(EVENT_POOL, 2);
+        const todayEvents = pickEvents();
         const todayTone = pickRandom(TONE_POOL, 1)[0];
 
-        // 캐릭터 정보를 서술형으로 변환
+        // 캐릭터 서술형 변환 (관계/멘탈 상태 포함)
         const charDescriptions = characters.filter(c => c.상태 === '생존').map(c => {
             let desc = `${c.이름}`;
             if (c.나이) desc += `(${c.나이}세)`;
@@ -672,37 +797,67 @@
             if (c.신념) desc += `. 내면의 가치관: "${c.신념}"`;
             if (c.관계) desc += `. 관계: ${c.관계}`;
             if (c.여담) desc += `. 참고: ${c.여담}`;
+            const mental = mentalStates[c.이름];
+            if (mental) desc += `. 현재 심리: ${mental.state}(스트레스 ${mental.stress}/100)`;
             return desc;
         }).join('\n');
 
-        const prompt = `당신은 한국 장편소설 작가입니다. 좀비 아포칼립스 세계관에서 살아가는 사람들의 이야기를 씁니다.
+        // 관계 현황 텍스트
+        const relText = Object.entries(relationships).map(([pair, r]) =>
+            `${pair.replace('-', '↔')}: 친밀도 ${r.level}/100 — ${r.desc || ''}`
+        ).join('\n') || '(아직 관계 기록 없음)';
+
+        // 물자 현황 텍스트
+        const invText = Object.entries(inventory).map(([k, v]) => `${k}: ${v}일분`).join(', ');
+
+        const prompt = `당신은 한국 장편소설 작가입니다. 좀비 아포칼립스 세계를 배경으로 생존자들의 이야기를 씁니다.
 
 [등장인물]
 ${charDescriptions}
+
+[관계 현황]
+${relText}
+
+[물자 현황] ${invText}
 
 [현재 시점] 생존 ${day}일차
 
 [최근 이야기]
 ${recentContext || '(첫날입니다. 세계가 무너진 직후.)'}
 
-[오늘의 사건 소재]
-- ${todayEvents[0]}
-- ${todayEvents[1]}
+[오늘의 사건 소재 — 이 중 자연스러운 것만 활용]
+${todayEvents.map((e, i) => `${i + 1}. ${e}`).join('\n')}
 
 [오늘의 분위기] ${todayTone}
 
-[작성 규칙]
+[핵심 작성 규칙]
 - 프로 소설가처럼 쓰세요. 묘사, 대화, 내면 독백을 자연스럽게 섞으세요.
-- 캐릭터의 성격과 신념은 절대 직접 설명하지 마세요. 행동, 말투, 선택, 표정으로만 드러내세요.
-  나쁜 예: "그의 신념은 끝까지 살아남는 것이었다"
-  좋은 예: 그는 떨리는 손으로 마지막 통조림을 열었다. 포기란 아직 사전에 없었다.
-- 캐릭터의 능력도 직접 언급하지 말고 장면 속에서 자연스럽게 보여주세요.
-- 매회 도입부를 다르게 시작하세요. 대화로, 풍경으로, 행동 중간에서, 회상으로 등 매번 다른 방식.
-- 이전 이야기와 자연스럽게 이어지되, 새로운 전개가 있어야 합니다.
-- 좀비물이라고 매번 전투만 하지 않습니다. 사람들 사이의 갈등, 유대, 유머, 슬픔, 일상이 더 중요합니다.
-- 위 [오늘의 사건 소재]를 참고하되 억지로 다 넣지 말고 자연스럽게 녹여주세요.
-- 한국어 소설체로 800~1200자. HTML(<p>, <strong>, <em> 등)로 출력.
-- 캐릭터가 사망하거나 이탈하면 글 맨 끝에 [상태변경: 이름=사망] 또는 [상태변경: 이름=이탈]을 적으세요. 해당 없으면 생략.`;
+- 캐릭터의 성격·신념·능력은 절대 직접 설명하지 마세요. 오직 행동, 말투, 선택, 표정으로만 드러내세요.
+  ✕ "그녀의 신념은 희망을 잃지 않는 것이었다" / "ENFP다운 낙천성"
+  ○ 행동과 대사로 보여주기. 독자가 스스로 느끼게 하세요.
+- 매회 도입부를 반드시 다르게 시작하세요. (대화 중간, 풍경, 회상, 행동 묘사 등)
+
+[감정과 관계 역학 — 매우 중요]
+- 극한 상황에서 사람의 감정은 격해집니다. 평소라면 참을 말도 터져나오고, 작은 일에 눈물이 나기도 합니다.
+- 인물들의 MBTI·성격 차이에서 오는 갈등을 구체적으로 묘사하세요. (행동파 vs 신중파, 이기적 생존 vs 집단 생존 등)
+- 연인·친구·가족 관계에서의 질투, 의존, 섭섭함, 미묘한 감정 변화를 섬세하게 그리세요.
+- 스트레스가 누적되면 멘탈이 흔들리는 모습(불면, 짜증, 무기력, 과민)도 현실적으로 표현하세요.
+
+[세계관 다양성]
+- 좀비만이 위협이 아닙니다. 자연재해, 물자 부족, 타 생존자 집단, 질병, 감염 공포, 내부 분열 등 다양한 위기를 다루세요.
+- 위기만 있는 게 아닙니다. 따뜻한 순간, 웃음, 소소한 행복도 소설의 일부입니다.
+
+[출력 형식]
+- 한국어 소설체 800~1200자. HTML(<p>, <strong>, <em>)로 출력.
+- 글 맨 끝에 아래 메타데이터를 JSON으로 반드시 적으세요:
+[META]
+{"inventory_change":{"식량":0,"물":0,"의약품":0,"무기":0,"도구":0,"기타":0},"relationships":{"이름1-이름2":{"level_change":0,"desc":"한줄설명"}},"mental":{"이름":{"state":"상태명","stress_change":0}},"status_change":[]}
+[/META]
+- inventory_change: 오늘 소비/획득한 물자 변동값 (예: 식량 -1이면 하루치 소모)
+- relationships: 변화가 있는 관계만. level_change는 -20~+20 범위.
+- mental: 변화가 있는 캐릭터만. state는 안정/불안/예민/분노/우울/무기력/각성/희망 중 하나. stress_change는 -30~+30 범위.
+- status_change: 사망이나 이탈이 있을 때만. 예: [{"name":"이름","status":"사망"}]
+- 변동 없는 항목은 생략 가능.`;
 
         try {
             const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/${model}:generateContent?key=${key}`, {
@@ -713,14 +868,54 @@ ${recentContext || '(첫날입니다. 세계가 무너진 직후.)'}
             if (data.error) throw new Error(data.error.message);
             let story = data.candidates[0].content.parts[0].text.replace(/```html|```/g, '');
 
-            // 상태 변경 파싱
-            const statusRegex = /\[상태변경:\s*(.+?)=(.+?)\]/g;
-            let match;
-            while ((match = statusRegex.exec(story)) !== null) {
-                const char = characters.find(c => c.이름 === match[1].trim());
-                if (char) char.상태 = match[2].trim();
+            // META 데이터 파싱
+            const metaMatch = story.match(/\[META\]\s*([\s\S]*?)\s*\[\/META\]/);
+            if (metaMatch) {
+                try {
+                    const meta = JSON.parse(metaMatch[1].replace(/```json|```/g, '').trim());
+
+                    // 물자 변동 적용
+                    if (meta.inventory_change) {
+                        for (const [k, v] of Object.entries(meta.inventory_change)) {
+                            if (inventory[k] !== undefined) inventory[k] = Math.max(0, inventory[k] + v);
+                        }
+                    }
+
+                    // 관계 변동 적용
+                    if (meta.relationships) {
+                        for (const [pair, r] of Object.entries(meta.relationships)) {
+                            if (!relationships[pair]) relationships[pair] = { level: 50, desc: '' };
+                            relationships[pair].level = Math.max(0, Math.min(100, relationships[pair].level + (r.level_change || 0)));
+                            if (r.desc) relationships[pair].desc = r.desc;
+                        }
+                    }
+
+                    // 멘탈 변동 적용
+                    if (meta.mental) {
+                        for (const [name, m] of Object.entries(meta.mental)) {
+                            if (!mentalStates[name]) mentalStates[name] = { state: '안정', stress: 30 };
+                            if (m.state) mentalStates[name].state = m.state;
+                            mentalStates[name].stress = Math.max(0, Math.min(100, mentalStates[name].stress + (m.stress_change || 0)));
+                        }
+                    }
+
+                    // 상태 변경
+                    if (meta.status_change) {
+                        for (const sc of meta.status_change) {
+                            const char = characters.find(c => c.이름 === sc.name);
+                            if (char) char.상태 = sc.status;
+                        }
+                    }
+                } catch(e) { console.warn('META parse failed:', e); }
             }
+
+            // META 태그 및 기존 상태변경 태그 제거
+            story = story.replace(/\[META\][\s\S]*?\[\/META\]/g, '');
             story = story.replace(/\[상태변경:[^\]]+\]/g, '');
+
+            // 기본 물자 소모 (하루에 식량/물 자동 -1)
+            inventory.식량 = Math.max(0, inventory.식량 - 1);
+            inventory.물 = Math.max(0, inventory.물 - 1);
 
             storyLog.push({ day, html: story });
             const board = document.getElementById('story-board');
@@ -730,6 +925,7 @@ ${recentContext || '(첫날입니다. 세계가 무너진 직후.)'}
             entry.innerHTML = `<div class="day-header"><div class="day-number">DAY ${day}</div><div class="day-divider"></div></div><div class="story-content">${story}</div>`;
             board.prepend(entry);
             renderChars();
+            renderInventory();
             if (db && currentSaveCode) saveGame();
         } catch (e) {
             toast('스토리 생성 실패: ' + e.message, 'error');
