@@ -760,28 +760,28 @@
     }
 
     function pickEvents() {
-        // 부정적 65%, 긍정적 35% 비율
-        const negativeCategories = ['환경위협', '좀비변이', '타생존자'];  // 위협/긴장 계열
-        const positiveCategories = ['물자', '평화일상', '발견탐험'];      // 보급/안정 계열
-        const neutralCategories = ['관계감정'];                           // 관계는 양면적
+        // 매일 이벤트 1개 발생. 그 이벤트의 종류:
+        // 부정적 50% / 긍정적 25% / 특수 25%
+        const negativeCategories = ['환경위협', '타생존자'];
+        const positiveCategories = ['물자', '평화일상', '발견탐험'];
+        const specialCategories = ['관계감정', '좀비변이'];
 
-        const events = [];
-        // 3개 이벤트 중 부정/긍정 비율 조절
-        for (let i = 0; i < 3; i++) {
-            const roll = Math.random();
-            let pool;
-            if (i === 0) {
-                // 첫 번째: 항상 관계감정 (캐릭터 드라마 보장)
-                pool = neutralCategories;
-            } else if (roll < 0.65) {
-                pool = negativeCategories;
-            } else {
-                pool = positiveCategories;
-            }
-            const cat = pickRandom(pool, 1)[0];
-            events.push(pickRandom(EVENT_POOL[cat], 1)[0]);
+        const roll = Math.random();
+        let pool;
+        let eventType;
+        if (roll < 0.50) {
+            pool = negativeCategories;
+            eventType = '부정';
+        } else if (roll < 0.75) {
+            pool = positiveCategories;
+            eventType = '긍정';
+        } else {
+            pool = specialCategories;
+            eventType = '특수';
         }
-        return events;
+        const cat = pickRandom(pool, 1)[0];
+        const event = pickRandom(EVENT_POOL[cat], 1)[0];
+        return { event, eventType, category: cat };
     }
 
     // ═══════════ 스토리 진행 ═══════════
@@ -799,7 +799,7 @@
             `[DAY ${e.day}]: ${e.html.replace(/<[^>]*>/g, '').substring(0, 400)}`
         ).join('\n');
 
-        const todayEvents = pickEvents();
+        const todayEvent = pickEvents();
         const todayTone = pickRandom(TONE_POOL, 1)[0];
 
         // 캐릭터 서술형 변환 (성별 호칭 가이드 + 관계/멘탈 상태 포함)
@@ -860,8 +860,8 @@ ${stressWarning}
 [최근 이야기 — 이전 이야기와 반드시 연속성을 유지하세요. 새 인물을 만들지 마세요.]
 ${recentContext || '(첫날입니다. 세계가 무너진 직후.)'}
 
-[오늘의 사건 소재 — 이 중 자연스러운 것만 활용]
-${todayEvents.map((e, i) => `${i + 1}. ${e}`).join('\n')}
+[오늘의 사건] (${todayEvent.eventType} 이벤트)
+${todayEvent.event}
 
 [오늘의 분위기] ${todayTone}
 
